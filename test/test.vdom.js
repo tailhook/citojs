@@ -620,18 +620,18 @@ describe('cito.vdom', function () {
         tag: 'div',
         events: {click: function (event) {
             callbackEventDescs.push('click outer');
-            return customEventHandler && customEventHandler(event);
+            return customEventHandler && customEventHandler.call(this, event);
         }},
         children: {
             tag: 'div',
             events: {click: [
                 function (event) {
                     callbackEventDescs.push('click inner 1');
-                    return customEventHandler && customEventHandler(event);
+                    return customEventHandler && customEventHandler.call(this, event);
                 },
                 function (event) {
                     callbackEventDescs.push('click inner 2');
-                    return customEventHandler && customEventHandler(event);
+                    return customEventHandler && customEventHandler.call(this, event);
                 }
             ]}
         }
@@ -786,6 +786,8 @@ describe('cito.vdom', function () {
             it('missing controls are added', function () {
                 expect(callbackEvent).to.have.property('defaultPrevented', false);
                 expect(callbackEvent.returnValue).not.to.be(false);
+                expect(callbackEvent).to.have.property('target');
+                expect(callbackEvent).to.have.property('currentTarget');
                 expect(callbackEvent.preventDefault).to.be.a('function');
                 expect(callbackEvent.stopPropagation).to.be.a('function');
                 expect(callbackEvent.stopImmediatePropagation).to.be.a('function');
@@ -837,6 +839,19 @@ describe('cito.vdom', function () {
             it('works', function () {
                 dispatchEvent(node.dom.firstChild, createEvent('click'));
                 expect(callbackEventDescs).to.eql(['click inner 1', 'click inner 2', 'click outer']);
+            });
+
+            it('this and currentTarget is set correctly', function () {
+                var thises = [], currentTargets = [];
+                customEventHandler = function (event) {
+                    thises.push(this);
+                    currentTargets.push(event.currentTarget);
+                };
+                dispatchEvent(node.dom.firstChild, createEvent('click'));
+                var domChild = node.children.dom,
+                    expectedCurrentTargets = [domChild, domChild, node.dom];
+                expect(thises).to.eql(expectedCurrentTargets);
+                expect(currentTargets).to.eql(expectedCurrentTargets);
             });
 
             it('stopPropagation() stops bubbling', function () {

@@ -499,11 +499,24 @@ var cito = window.cito || {};
 
     var stopImmediate = false;
 
-    // jshint ignore:start
-    function stopImmediatePropagation() {
-        stopImmediate = true;
-        this.stopPropagation();
+    function eventHandler(event) {
+        event = getFixedEvent(event, this); // jshint ignore:line
+        var currentTarget = event.currentTarget,
+            eventHandlers = currentTarget.virtualNode.events[event.type];
+        if (isArray(eventHandlers)) {
+            for (var i = 0, len = eventHandlers.length; i < len; i++) {
+                callEventHandler(eventHandlers[i], currentTarget, event);
+                if (stopImmediate) {
+                    stopImmediate = false;
+                    break;
+                }
+            }
+        } else {
+            callEventHandler(eventHandlers, currentTarget, event);
+        }
     }
+
+    // jshint ignore:start
     function preventDefault() {
         this.defaultPrevented = true;
         this.returnValue = false;
@@ -511,46 +524,29 @@ var cito = window.cito || {};
     function stopPropagation() {
         this.cancelBubble = true;
     }
+    function stopImmediatePropagation() {
+        stopImmediate = true;
+        this.stopPropagation();
+    }
     // jshint ignore:end
 
-    function eventHandler(event) {
+    function getFixedEvent(event, thisArg) {
         if (!event) {
             event = window.event;
-        }
-        if (event.defaultPrevented === undefined) {
             event.defaultPrevented = (event.returnValue === false);
-        }
-        if (!event.preventDefault) {
             event.preventDefault = preventDefault;
-        }
-        if (!event.stopPropagation) {
             event.stopPropagation = stopPropagation;
+            var target = event.target = event.srcElement;
+            event.currentTarget = thisArg.nodeType ? thisArg : target; // jshint ignore:line
+            // TODO further event normalization
         }
-        stopImmediate = false;
         event.stopImmediatePropagation = stopImmediatePropagation;
-
-        var currentTarget = event.currentTarget;
-        if (!currentTarget) {
-            currentTarget = this.tagName ? this : event.srcElement; // jshint ignore:line
-        }
-        // TODO event normalization
-
-        var eventHandlers = currentTarget.virtualNode.events[event.type];
-        if (isArray(eventHandlers)) {
-            for (var i = 0, len = eventHandlers.length; i < len; i++) {
-                callEventHandler(eventHandlers[i], event);
-                if (stopImmediate) {
-                    break;
-                }
-            }
-        } else {
-            callEventHandler(eventHandlers, event);
-        }
+        return event;
     }
 
-    function callEventHandler(eventHandler, event) {
+    function callEventHandler(eventHandler, currentTarget, event) {
         try {
-            if (eventHandler(event) === false) {
+            if (eventHandler.call(currentTarget, event) === false) {
                 event.preventDefault();
             }
         } catch (e) {
