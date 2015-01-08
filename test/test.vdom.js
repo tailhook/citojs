@@ -347,6 +347,42 @@ describe('cito.vdom', function () {
                     ]
                 },
                 html: '<ul><li>t4</li><li>t1</li><li>t2</li></ul>'
+            },
+            {
+                name: '0-4',
+                node: {
+                    tag: 'ul',
+                    children: [
+                        {tag: 'li', key: 0, children: ['t0']},
+                        {tag: 'li', key: 4, children: ['t4']}
+                    ]
+                },
+                html: '<ul><li>t0</li><li>t4</li></ul>'
+            },
+            {
+                name: '0-5-4',
+                node: {
+                    tag: 'ul',
+                    children: [
+                        {tag: 'li', key: 0, children: ['t0']},
+                        {tag: 'li', key: 5, children: ['t5']},
+                        {tag: 'li', key: 4, children: ['t4']}
+                    ]
+                },
+                html: '<ul><li>t0</li><li>t5</li><li>t4</li></ul>'
+            },
+            {
+                name: '0-5-6-4',
+                node: {
+                    tag: 'ul',
+                    children: [
+                        {tag: 'li', key: 0, children: ['t0']},
+                        {tag: 'li', key: 6, children: ['t6']},
+                        {tag: 'li', key: 5, children: ['t5']},
+                        {tag: 'li', key: 4, children: ['t4']}
+                    ]
+                },
+                html: '<ul><li>t0</li><li>t6</li><li>t5</li><li>t4</li></ul>'
             }
         ],
         'keyed html': [

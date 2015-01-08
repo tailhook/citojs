@@ -74,18 +74,37 @@ var cito = window.cito || {};
         }
     }
 
-    function insertOrAppend(domElement, domChild, nextChild) {
-        if (nextChild) {
-            domElement.insertBefore(domChild, nextChild.dom);
-        } else {
-            domElement.appendChild(domChild);
+    function moveChild(domElement, child, nextChild) {
+        // TODO optimize for domLength 1?
+        var domChild = child.dom, domLength = child.domLength || 1,
+            domNextChild,
+            domRefChild = nextChild && nextChild.dom;
+        while (domLength--) {
+            domNextChild = (domLength > 0) ? domChild.nextSibling : null;
+            if (domRefChild) {
+                domElement.insertBefore(domChild, domRefChild);
+            } else {
+                domElement.appendChild(domChild);
+            }
+            domChild = domNextChild;
         }
     }
 
-    function createNode(node, parent) {
-        var domNode,
-            tag = node.tag,
-            children = node.children;
+    function insertBeforeHTML(domParent, html, domNextChild) {
+        if (domNextChild.nodeType === 1) {
+            domNextChild.insertAdjacentHTML('beforebegin', html);
+        } else {
+            helperDiv.innerHTML = html;
+            var child;
+            while (child = helperDiv.firstChild) { // jshint ignore:line
+                domParent.insertBefore(child, domNextChild);
+            }
+        }
+    }
+
+    function createNode(node, domParent, parent, nextChild, replace) { // TODO parent namespace instead of parent?
+        var domNode, domNextChild,
+            tag = node.tag, children = node.children;
         switch (tag) {
             case '#':
                 domNode = document.createTextNode(children);
@@ -94,18 +113,25 @@ var cito = window.cito || {};
                 domNode = document.createComment(children);
                 break;
             case '<':
-                // TODO improve performance with insertAdjacentHTML
                 if (children) {
-                    helperDiv.innerHTML = children;
-                    var fragment = document.createDocumentFragment(),
-                        child;
-                    while (child = helperDiv.firstChild) { // jshint ignore:line
-                        fragment.appendChild(child);
+                    var domChildren = domParent.childNodes,
+                        prevLength = domChildren.length;
+                    if (nextChild) {
+                        domNextChild = nextChild.dom;
+                        var domPrevChild = domNextChild.previousSibling;
+                        insertBeforeHTML(domParent, children, domNextChild);
+                        node.dom = domPrevChild ? domPrevChild.nextSibling : domParent.firstChild;
+                    } else {
+                        domParent.insertAdjacentHTML('beforeend', children);
+                        node.dom = domChildren[prevLength];
                     }
-                    node.dom = fragment.firstChild;
-                    node.domSize = fragment.childNodes.length;
-                    return fragment;
+                    node.domLength = domChildren.length - prevLength;
+                    if (replace && nextChild) {
+                        removeChild(domParent, nextChild);
+                    }
+                    return;
                 } else {
+                    // TODO handle node without dom instead
                     domNode = document.createTextNode('');
                 }
                 break;
@@ -114,7 +140,7 @@ var cito = window.cito || {};
                 switch (tag) {
                     case 'svg': namespace = 'http://www.w3.org/2000/svg'; break;
                     case 'math': namespace = 'http://www.w3.org/1998/Math/MathML'; break;
-                    default: namespace = parent && parent.ns;
+                    default: namespace = parent && parent.ns; break;
                 }
                 if (namespace) {
                     node.ns = namespace;
@@ -124,9 +150,28 @@ var cito = window.cito || {};
                 }
                 updateElement(domNode, null, null, node, tag, node.attrs, node.events);
                 createChildren(domNode, node, normChildren(node, children));
+                break;
         }
         node.dom = domNode;
-        return domNode;
+        if (domParent) {
+            if (nextChild) {
+                domNextChild = nextChild.dom;
+                if (replace) {
+                    var domLength = nextChild.domLength || 1;
+                    if (domLength === 1) {
+                        destroyNode(nextChild);
+                        domParent.replaceChild(domNode, domNextChild);
+                    } else {
+                        domParent.insertBefore(domNode, domNextChild);
+                        removeChild(domParent, nextChild);
+                    }
+                } else {
+                    domParent.insertBefore(domNode, domNextChild);
+                }
+            } else {
+                domParent.appendChild(domNode);
+            }
+        }
     }
 
     function updateElement(domElement, oldAttrs, oldEvents, element, tag, attrs, events) {
@@ -301,7 +346,7 @@ var cito = window.cito || {};
                         removeChild(domElement, normOnlyOld(oldChildren, domElement));
                     }
                 } else if (oldChildrenSize > 1) {
-                    oldChildren = toOldChildrenArray(oldChildren, oldChildrenSize, domElement);
+                    oldChildren = toChildrenArrayOld(oldChildren, oldChildrenSize, domElement);
                     removeChildren(domElement, oldChildren, 0, oldChildrenSize);
                 }
             } else if (oldChildrenSize === 1 && childrenSize === 1) {
@@ -313,29 +358,30 @@ var cito = window.cito || {};
                 } else {
                     var oldChild = normOnlyOld(oldChildren, domElement),
                         child = normOnly(children);
-                    updateNode(oldChild, child, element, domElement);
+                    // TODO compare key
+                    updateNode(oldChild, child, domElement, element);
                 }
             } else {
-                oldChildren = toOldChildrenArray(oldChildren, oldChildrenSize, domElement);
+                oldChildren = toChildrenArrayOld(oldChildren, oldChildrenSize, domElement);
                 children = toChildrenArray(children, childrenSize, element);
                 updateChildrenKey(domElement, element, oldChildren, children);
             }
         }
     }
 
-    function createChildren(domElement, node, children) {
+    function createChildren(domElement, element, children) {
         var childrenSize = getChildrenSize(children);
         if (childrenSize === 1) {
             var text = getOnlyChildIfText(children);
             if (text !== null) {
                 setTextContent(domElement, text);
             } else {
-                domElement.appendChild(createNode(normOnly(children), node));
+                createNode(normOnly(children), domElement, element);
             }
         } else if (childrenSize > 1) {
-            children = toChildrenArray(children, childrenSize, node);
+            children = toChildrenArray(children, childrenSize, element);
             for (var i = 0, len = children.length; i < len; i++) {
-                domElement.appendChild(createNode(normIndex(children, i), node));
+                createNode(normIndex(children, i), domElement, element);
             }
         }
     }
@@ -344,7 +390,7 @@ var cito = window.cito || {};
         return isArray(children) ? children.length : children || isString(children) ? 1 : 0;
     }
 
-    function toOldChildrenArray(children, size, domElement) {
+    function toChildrenArrayOld(children, size, domElement) {
         children = (size > 1) ? children : isArray(children) ? children : [children];
         if (size === 1) {
             var onlyChild = normIndex(children, 0);
@@ -387,12 +433,14 @@ var cito = window.cito || {};
     }
 
     function removeChild(domElement, child) {
+        // TODO optimize for domLength 1?
         destroyNode(child);
-        var domNode = child.dom, nextDomNode;
-        for (var domSize = child.domSize || 1; domSize--;) {
-            nextDomNode = (domSize > 0) ? domNode.nextSibling : null;
-            domElement.removeChild(domNode);
-            domNode = nextDomNode;
+        var domChild = child.dom, domLength = child.domLength || 1,
+            domNextChild;
+        while (domLength--) {
+            domNextChild = (domLength > 0) ? domChild.nextSibling : null;
+            domElement.removeChild(domChild);
+            domChild = domNextChild;
         }
     }
 
@@ -408,7 +456,7 @@ var cito = window.cito || {};
             oldStartChild = oldChildren[oldStartIndex];
             startChild = normIndex(children, startIndex, oldStartChild);
             while (oldStartChild.key === startChild.key) {
-                updateNode(oldStartChild, startChild, element);
+                updateNode(oldStartChild, startChild, domElement, element);
                 oldStartIndex++; startIndex++;
                 if (oldStartIndex > oldEndIndex || startIndex > endIndex) {
                     break outer;
@@ -420,7 +468,7 @@ var cito = window.cito || {};
             oldEndChild = oldChildren[oldEndIndex];
             endChild = normIndex(children, endIndex, oldEndChild);
             while (oldEndChild.key === endChild.key) {
-                updateNode(oldEndChild, endChild, element);
+                updateNode(oldEndChild, endChild, domElement, element);
                 oldEndIndex--; endIndex--;
                 if (oldStartIndex > oldEndIndex || startIndex > endIndex) {
                     break outer;
@@ -430,8 +478,8 @@ var cito = window.cito || {};
                 successful = true;
             }
             while (oldStartChild.key === endChild.key) {
-                updateNode(oldStartChild, endChild, element);
-                insertOrAppend(domElement, endChild.dom, children[endIndex + 1]);
+                updateNode(oldStartChild, endChild, domElement, element);
+                moveChild(domElement, endChild, children[endIndex + 1]);
                 oldStartIndex++; endIndex--;
                 if (oldStartIndex > oldEndIndex || startIndex > endIndex) {
                     break outer;
@@ -441,8 +489,8 @@ var cito = window.cito || {};
                 successful = true;
             }
             while (oldEndChild.key === startChild.key) {
-                updateNode(oldEndChild, startChild, element);
-                domElement.insertBefore(startChild.dom, oldChildren[oldStartIndex].dom);
+                updateNode(oldEndChild, startChild, domElement, element);
+                moveChild(domElement, startChild, oldChildren[oldStartIndex]);
                 oldEndIndex--; startIndex++;
                 if (oldStartIndex > oldEndIndex || startIndex > endIndex) {
                     break outer;
@@ -453,10 +501,11 @@ var cito = window.cito || {};
             }
         }
 
+        var nextChild;
         if (oldStartIndex > oldEndIndex) {
-            normIndex(children, startIndex);
+            nextChild = normIndex(children, endIndex + 1);
             for (; startIndex <= endIndex; startIndex++) {
-                insertOrAppend(domElement, createNode(children[startIndex], element), normIndex(children, endIndex + 1));
+                createNode(normIndex(children, startIndex), domElement, element, nextChild);
             }
         } else if (startIndex > endIndex) {
             removeChildren(domElement, oldChildren, oldStartIndex, oldEndIndex + 1);
@@ -471,7 +520,7 @@ var cito = window.cito || {};
                 oldChildrenMap[oldChild.key] = oldChild;
                 oldNextChild = oldChild;
             }
-            var nextChild = normIndex(children, endIndex + 1);
+            nextChild = normIndex(children, endIndex + 1);
             for (i = endIndex; i >= startIndex; i--) {
                 var child = children[i],
                     key = child.key;
@@ -479,12 +528,12 @@ var cito = window.cito || {};
                 if (oldChild) {
                     oldChildrenMap[key] = null;
                     oldNextChild = oldChild.next;
-                    var domNode = updateNode(oldChild, child, element);
+                    updateNode(oldChild, child, element);
                     if ((oldNextChild && oldNextChild.key) !== (nextChild && nextChild.key)) {
-                        insertOrAppend(domElement, domNode, nextChild);
+                        moveChild(domElement, child, nextChild);
                     }
                 } else {
-                    insertOrAppend(domElement, createNode(child, element), nextChild);
+                    createNode(child, domElement, element, nextChild);
                 }
                 nextChild = child;
             }
@@ -554,30 +603,13 @@ var cito = window.cito || {};
         }
     }
 
-    function updateNode(oldNode, node, parent) {
-        var domNode = oldNode.dom,
-            tag = node.tag,
-            domParent, domSize, nextDomNode;
+    function updateNode(oldNode, node, domParent, parent) {
+        var tag = node.tag;
         if (oldNode.tag !== tag) {
-            domParent = domNode.parentNode;
-            var oldDomNode = domNode;
-            domNode = createNode(node, parent);
-            destroyNode(oldNode);
-            if (domParent) {
-                domSize = oldNode.domSize;
-                if (domSize > 1) {
-                    domParent.insertBefore(domNode, oldDomNode);
-                    while (domSize--) {
-                        nextDomNode = (domSize > 0) ? oldDomNode.nextSibling : null;
-                        domParent.removeChild(oldDomNode);
-                        oldDomNode = nextDomNode;
-                    }
-                } else {
-                    domParent.replaceChild(domNode, oldDomNode);
-                }
-            }
+            createNode(node, domParent, parent, oldNode, true);
         } else {
-            var oldChildren = oldNode.children,
+            var domNode = oldNode.dom,
+                oldChildren = oldNode.children,
                 children = node.children;
             switch (tag) {
                 case '#':
@@ -587,24 +619,20 @@ var cito = window.cito || {};
                     }
                     break;
                 case '<':
-                    // TODO improve performance with insertAdjacentHTML
                     if (oldChildren !== children) {
-                        domParent = domNode.parentNode;
-                        domParent.insertBefore(createNode(node), domNode);
-                        for (domSize = oldNode.domSize || 1; domSize--;) {
-                            nextDomNode = (domSize > 0) ? domNode.nextSibling : null;
-                            domParent.removeChild(domNode);
-                            domNode = nextDomNode;
-                        }
+                        createNode(node, domParent, parent, oldNode, true);
+                    } else {
+                        node.dom = oldNode.dom;
+                        node.domLength = oldNode.domLength;
                     }
-                    break;
+                    return;
                 default:
                     updateElement(domNode, oldNode.attrs, oldNode.events, node, tag, node.attrs, node.events);
                     updateChildren(domNode, node, oldChildren, normChildren(node, children, oldChildren));
+                    break;
             }
+            node.dom = domNode;
         }
-        node.dom = domNode;
-        return domNode;
     }
 
     function destroyNode(node) {
@@ -659,7 +687,7 @@ var cito = window.cito || {};
         },
         update: function (oldNode, node) {
             node = norm(node, oldNode);
-            updateNode(oldNode, node);
+            updateNode(oldNode, node, oldNode.dom.parentNode);
             writeObject(node, oldNode);
             return oldNode;
         },
