@@ -412,7 +412,7 @@ describe('cito.vdom', function () {
     var callbackOldNodes;
     var liFunc = function (oldNode) {
         callbackOldNodes && callbackOldNodes.push(oldNode);
-        return {tag: 'li', children: 't'}
+        return {tag: 'li', children: 't'};
     };
     domDefs['callback'] = [
         {
@@ -548,14 +548,16 @@ describe('cito.vdom', function () {
         ];
     }
 
-    describe('#create() DOM', function () {
-        _.forEach(domDefs, function (defs, groupName) {
-            describe(groupName, function () {
-                _.forEach(defs, function (def) {
-                    it(def.name, function () {
-                        var node = cito.vdom.create(_.cloneDeep(def.node));
-                        expect(node.dom).to.eqlDom(def.html);
-                        verifyNamespaces(node.dom, def.namespaces);
+    describe('#create()', function () {
+        describe('DOM', function () {
+            _.forEach(domDefs, function (defs, groupName) {
+                describe(groupName, function () {
+                    _.forEach(defs, function (def) {
+                        it(def.name, function () {
+                            var node = cito.vdom.create(_.cloneDeep(def.node));
+                            expect(node.dom).to.eqlDom(def.html);
+                            verifyNamespaces(node.dom, def.namespaces);
+                        });
                     });
                 });
             });
@@ -638,11 +640,12 @@ describe('cito.vdom', function () {
     };
 
     describe('#update()', function () {
-        beforeEach(function () {
-            callbackOldNodes = [];
-        });
-        afterEach(function () {
-            callbackOldNodes = undefined;
+        it('tag name does not change parent', function () {
+            var domParent = document.createElement('div');
+            var node = cito.vdom.append(domParent, {tag: 'div'});
+            expect(node.dom.parentNode).to.be(domParent);
+            cito.vdom.update(node, {tag: 'span'});
+            expect(node.dom.parentNode).to.be(domParent);
         });
 
         describe('DOM', function () {
@@ -660,7 +663,14 @@ describe('cito.vdom', function () {
             });
         });
 
-        describe('DOM with callbacks', function () {
+        describe('DOM callbacks', function () {
+            beforeEach(function () {
+                callbackOldNodes = [];
+            });
+            afterEach(function () {
+                callbackOldNodes = undefined;
+            });
+
             _.forEach(domDefs['callback'], function (def) {
                 it(def.name, function () {
                     var node = cito.vdom.create(_.cloneDeep(def.node));
@@ -685,14 +695,41 @@ describe('cito.vdom', function () {
                 });
             });
         });
+    });
 
-        describe('destroy', function () {
+    describe('#append()', function () {
+        it('appends node to parent', function () {
+            var domParent = document.createElement('div');
+            var node = cito.vdom.append(domParent, {tag: 'div'});
+
+            expect(node.dom.parentNode).to.be(domParent);
+            expect(domParent.childNodes.length).to.be(1);
+
+            cito.vdom.remove(node);
+        });
+    });
+
+    describe('#remove()', function () {
+        it('removed node from parent', function () {
+            var domParent = document.createElement('div');
+            var node = cito.vdom.append(domParent, {tag: 'div'});
+            cito.vdom.remove(node);
+
+            try {
+                expect(node.dom.parentNode).to.be(null);
+            } catch (e) {
+                expect(node.dom.parentNode.tagName).to.be(undefined); // IE6
+            }
+            expect(domParent.childNodes.length).to.be(0);
+        });
+
+        describe('destroys virtual node', function () {
             var node;
             beforeEach(function () {
                 node = cito.vdom.append(document.body, _.cloneDeep(nodeWithNestedEvents));
             });
 
-            it('virtualNode properties', function () {
+            it('properties', function () {
                 expect(node.dom.virtualNode).to.be(node);
                 expect(node.dom.firstChild.virtualNode).to.be(node.children);
 
@@ -783,7 +820,7 @@ describe('cito.vdom', function () {
                 cito.vdom.remove(node);
             });
 
-            it('missing controls are added', function () {
+            it('missing properties are added', function () {
                 expect(callbackEvent).to.have.property('defaultPrevented', false);
                 expect(callbackEvent.returnValue).not.to.be(false);
                 expect(callbackEvent).to.have.property('target');
@@ -915,7 +952,7 @@ describe('cito.vdom', function () {
             }
             var namespace = namespaces[node.tagName];
             if (namespace) {
-                expect(node.namespaceURI).to.equal(namespace);
+                expect(node.namespaceURI).to.be(namespace);
             }
             var attrs = node.attributes;
             for (var i = 0; i < attrs.length; i++) {
@@ -923,7 +960,7 @@ describe('cito.vdom', function () {
                 namespace = namespaces[attr.name];
                 if (namespace) {
                     var attrNamespace = attr.namespaceURI;
-                    expect(attrNamespace).to.equal(namespace);
+                    expect(attrNamespace).to.be(namespace);
                 }
             }
             _.forEach(node.children, function (child) {
@@ -991,21 +1028,17 @@ describe('cito.vdom', function () {
         }
     }
 
-    it('append and remove', function () {
-        var domParent = document.createElement('div');
-        var node = cito.vdom.append(domParent, {tag: 'div'});
-        expect(domParent.childNodes.length).to.be(1);
-        cito.vdom.remove(node);
-        expect(domParent.childNodes.length).to.be(0);
-    });
-
     var expectPrototype = expect().constructor.prototype;
     expectPrototype.eqlDom = function (obj) {
         var html1 = getHtml(this.obj), html2 = getHtml(obj);
-        this.assert(
-            comparableHtml(html1) === comparableHtml(html2)
-            , function(){ return 'expected ' + html1 + ' to equal DOM ' + html2 }
-            , function(){ return 'expected ' + html1 + ' to not equal DOM ' + html2 });
+        this.assert(comparableHtml(html1) === comparableHtml(html2),
+            function () {
+                return 'expected ' + html1 + ' to equal DOM ' + html2;
+            },
+            function () {
+                return 'expected ' + html1 + ' to not equal DOM ' + html2;
+            }
+        );
         return this;
     };
 
