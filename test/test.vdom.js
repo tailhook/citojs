@@ -654,9 +654,16 @@ describe('cito.vdom', function () {
                     forEachCombination(domDefs[groupName], function (def1, def2) {
                         it(def1.name + ' -> ' + def2.name, function () {
                             var node = cito.vdom.create(_.cloneDeep(def1.node));
-                            node = cito.vdom.update(node, _.cloneDeep(def2.node));
+                            cito.vdom.update(node, _.cloneDeep(def2.node));
                             expect(node.dom).to.eqlDom(def2.html);
                             verifyNamespaces(node.dom, def2.namespaces);
+                        });
+                        it(def1.name + ' -> ' + def2.name + ' -> ' + def1.name, function () {
+                            var node = cito.vdom.create(_.cloneDeep(def1.node));
+                            cito.vdom.update(node, _.cloneDeep(def2.node));
+                            cito.vdom.update(node, _.cloneDeep(def1.node));
+                            expect(node.dom).to.eqlDom(def1.html);
+                            verifyNamespaces(node.dom, def1.namespaces);
                         });
                     });
                 });
