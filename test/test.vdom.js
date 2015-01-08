@@ -349,6 +349,50 @@ describe('cito.vdom', function () {
                 html: '<ul><li>t4</li><li>t1</li><li>t2</li></ul>'
             }
         ],
+        'keyed html': [
+            {
+                name: '0',
+                node: {
+                    tag: 'div',
+                    children: [
+                        {tag: '<', key: 0, children: '<b>t0.0</b><b>t0.1</b>'}
+                    ]
+                },
+                html: '<div><b>t0.0</b><b>t0.1</b></div>'
+            },
+            {
+                name: '1',
+                node: {
+                    tag: 'div',
+                    children: [
+                        {tag: '<', key: 1, children: '<b>t1.0</b><b>t1.1</b>'}
+                    ]
+                },
+                html: '<div><b>t1.0</b><b>t1.1</b></div>'
+            },
+            {
+                name: '0-1',
+                node: {
+                    tag: 'div',
+                    children: [
+                        {tag: '<', key: 0, children: '<b>t0.0</b><b>t0.1</b>'},
+                        {tag: '<', key: 1, children: '<b>t1.0</b><b>t1.1</b>'}
+                    ]
+                },
+                html: '<div><b>t0.0</b><b>t0.1</b><b>t1.0</b><b>t1.1</b></div>'
+            },
+            {
+                name: '1-0',
+                node: {
+                    tag: 'div',
+                    children: [
+                        {tag: '<', key: 1, children: '<b>t1.0</b><b>t1.1</b>'},
+                        {tag: '<', key: 0, children: '<b>t0.0</b><b>t0.1</b>'}
+                    ]
+                },
+                html: '<div><b>t1.0</b><b>t1.1</b><b>t0.0</b><b>t0.1</b></div>'
+            }
+        ],
         'style': [
             {
                 name: 'none',
