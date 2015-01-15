@@ -582,11 +582,13 @@ var cito = window.cito || {};
     function getFixedEvent(event, thisArg) {
         if (!event) {
             event = window.event;
-            event.defaultPrevented = (event.returnValue === false);
-            event.preventDefault = preventDefault;
-            event.stopPropagation = stopPropagation;
-            var target = event.target = event.srcElement;
-            event.currentTarget = thisArg.nodeType ? thisArg : target; // jshint ignore:line
+            if (!event.preventDefault) {
+                event.preventDefault = preventDefault;
+                event.stopPropagation = stopPropagation;
+                event.defaultPrevented = (event.returnValue === false);
+                event.target = event.srcElement;
+            }
+            event.currentTarget = thisArg.nodeType ? thisArg : event.target; // jshint ignore:line
             // TODO further event normalization
         }
         event.stopImmediatePropagation = stopImmediatePropagation;
