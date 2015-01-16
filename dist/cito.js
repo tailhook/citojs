@@ -46,22 +46,16 @@ var cito = window.cito || {};
         return child;
     }
 
-    function normOnly(children) {
-        var onlyChild = isArray(children) ? children[0] : children;
-        return norm(onlyChild);
-    }
-
-    function normOnlyOld(children, domElement) {
-        var onlyChild = normOnly(children);
-        if (onlyChild && !onlyChild.dom) {
-            onlyChild.dom = domElement.firstChild;
-        }
-        return onlyChild;
-    }
-
     function normChildren(node, children, oldChildren) {
-        if (children && isFunction(children)) {
-            node.children = children = children(oldChildren);
+        var origChildren = children;
+        if (isFunction(children)) {
+            children = children(oldChildren);
+        }
+        if (!isArray(children)) {
+            children = children ? [children] : [];
+        }
+        if (origChildren !== children) {
+            node.children = children;
         }
         return children;
     }
@@ -75,7 +69,6 @@ var cito = window.cito || {};
     }
 
     function moveChild(domElement, child, nextChild) {
-        // TODO optimize for domLength 1?
         var domChild = child.dom, domLength = child.domLength || 1,
             domNextChild,
             domRefChild = nextChild && nextChild.dom;
@@ -149,7 +142,8 @@ var cito = window.cito || {};
                     domNode = document.createElement(tag);
                 }
                 updateElement(domNode, null, null, node, tag, node.attrs, node.events);
-                createChildren(domNode, node, normChildren(node, children));
+                children = normChildren(node, children);
+                createChildren(domNode, node, children, 0, children.length);
                 break;
         }
         node.dom = domNode;
@@ -332,108 +326,31 @@ var cito = window.cito || {};
         }
     }
 
-    function updateChildren(domElement, element, oldChildren, children) {
-        var oldChildrenSize = getChildrenSize(oldChildren);
-        if (oldChildrenSize === 0) {
-            createChildren(domElement, element, children);
-        } else {
-            var childrenSize = getChildrenSize(children);
-            if (childrenSize === 0) {
-                if (oldChildrenSize === 1) {
-                    if (getOnlyChildIfText(oldChildren) !== null) {
-                        domElement.removeChild(domElement.firstChild);
-                    } else {
-                        removeChild(domElement, normOnlyOld(oldChildren, domElement));
-                    }
-                } else if (oldChildrenSize > 1) {
-                    oldChildren = toChildrenArrayOld(oldChildren, oldChildrenSize, domElement);
-                    removeChildren(domElement, oldChildren, 0, oldChildrenSize);
-                }
-            } else if (oldChildrenSize === 1 && childrenSize === 1) {
-                var oldChildText = getOnlyChildIfText(oldChildren), childText;
-                if (oldChildText !== null && (childText = getOnlyChildIfText(children)) !== null) {
-                    if (oldChildText !== childText) {
-                        setTextContent(domElement, childText);
-                    }
-                } else {
-                    var oldChild = normOnlyOld(oldChildren, domElement),
-                        child = normOnly(children);
-                    // TODO compare key
-                    updateNode(oldChild, child, domElement, element);
-                }
-            } else {
-                oldChildren = toChildrenArrayOld(oldChildren, oldChildrenSize, domElement);
-                children = toChildrenArray(children, childrenSize, element);
-                updateChildrenKey(domElement, element, oldChildren, children);
-            }
+    function createChildren(domElement, element, children, i, to, nextChild) {
+        for (; i < to; i++) {
+            createNode(normIndex(children, i), domElement, element, nextChild);
         }
-    }
-
-    function createChildren(domElement, element, children) {
-        var childrenSize = getChildrenSize(children);
-        if (childrenSize === 1) {
-            var text = getOnlyChildIfText(children);
-            if (text !== null) {
-                setTextContent(domElement, text);
-            } else {
-                createNode(normOnly(children), domElement, element);
-            }
-        } else if (childrenSize > 1) {
-            children = toChildrenArray(children, childrenSize, element);
-            for (var i = 0, len = children.length; i < len; i++) {
-                createNode(normIndex(children, i), domElement, element);
-            }
-        }
-    }
-
-    function getChildrenSize(children) {
-        return isArray(children) ? children.length : children || isString(children) ? 1 : 0;
-    }
-
-    function toChildrenArrayOld(children, size, domElement) {
-        children = (size > 1) ? children : isArray(children) ? children : [children];
-        if (size === 1) {
-            var onlyChild = normIndex(children, 0);
-            if (!onlyChild.dom) {
-                onlyChild.dom = domElement.firstChild;
-            }
-        }
-        return children;
-    }
-
-    function toChildrenArray(children, size, element) {
-        return (size > 1) ? children : isArray(children) ? children : (element.children = [children]);
-    }
-
-    function getOnlyChildIfText(children) {
-        var onlyChild = isArray(children) ? children[0] : children;
-        return isString(onlyChild) ? onlyChild : (onlyChild.tag === '#') ? onlyChild.children : null;
     }
 
     var range = supportsRange ? document.createRange() : null;
 
     function removeChildren(domElement, children, from, to) {
-        var count = to - from, i;
-        if (count === 1) {
-            removeChild(domElement, children[from]);
-            /* TODO use range for better performance with many children
-        } else if (hasRange && count === children.length) {
-            // TODO use setStartBefore/setEndAfter for faster range delete
+        for (var i = from; i < to; i++) {
+            removeChild(domElement, children[i]);
+        }
+        // TODO use range for better performance with many children
+        // TODO use setStartBefore/setEndAfter for faster range delete
+        /*
+         } else if (hasRange && count === children.length) {
             for (i = from; i < to; i++) {
                 destroyNode(children[i]);
             }
             range.selectNodeContents(domElement);
             range.deleteContents();
-            */
-        } else {
-            for (i = from; i < to; i++) {
-                removeChild(domElement, children[i]);
-            }
-        }
+         */
     }
 
     function removeChild(domElement, child) {
-        // TODO optimize for domLength 1?
         destroyNode(child);
         var domChild = child.dom, domLength = child.domLength || 1,
             domNextChild;
@@ -444,7 +361,7 @@ var cito = window.cito || {};
         }
     }
 
-    function updateChildrenKey(domElement, element, oldChildren, children) {
+    function updateChildren(domElement, element, oldChildren, children) {
         var oldStartIndex = 0, oldEndIndex = oldChildren.length - 1,
             startIndex = 0, endIndex = children.length - 1,
             successful = true;
@@ -501,16 +418,12 @@ var cito = window.cito || {};
             }
         }
 
-        var nextChild;
         if (oldStartIndex > oldEndIndex) {
-            nextChild = normIndex(children, endIndex + 1);
-            for (; startIndex <= endIndex; startIndex++) {
-                createNode(normIndex(children, startIndex), domElement, element, nextChild);
-            }
+            createChildren(domElement, element, children, startIndex, endIndex + 1, normIndex(children, endIndex + 1));
         } else if (startIndex > endIndex) {
             removeChildren(domElement, oldChildren, oldStartIndex, oldEndIndex + 1);
         } else {
-            // TODO create map with shorter list
+            // TODO optimize: create map with shorter list
             var i, oldChild,
                 oldNextChild = oldChildren[oldEndIndex + 1],
                 oldChildrenMap = {};
@@ -520,7 +433,7 @@ var cito = window.cito || {};
                 oldChildrenMap[oldChild.key] = oldChild;
                 oldNextChild = oldChild;
             }
-            nextChild = normIndex(children, endIndex + 1);
+            var nextChild = normIndex(children, endIndex + 1);
             for (i = endIndex; i >= startIndex; i--) {
                 var child = children[i],
                     key = child.key;
@@ -582,11 +495,13 @@ var cito = window.cito || {};
     function getFixedEvent(event, thisArg) {
         if (!event) {
             event = window.event;
-            event.defaultPrevented = (event.returnValue === false);
-            event.preventDefault = preventDefault;
-            event.stopPropagation = stopPropagation;
-            var target = event.target = event.srcElement;
-            event.currentTarget = thisArg.nodeType ? thisArg : target; // jshint ignore:line
+            if (!event.preventDefault) {
+                event.preventDefault = preventDefault;
+                event.stopPropagation = stopPropagation;
+                event.defaultPrevented = (event.returnValue === false);
+                event.target = event.srcElement;
+            }
+            event.currentTarget = thisArg.nodeType ? thisArg : event.target; // jshint ignore:line
             // TODO further event normalization
         }
         event.stopImmediatePropagation = stopImmediatePropagation;

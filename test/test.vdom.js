@@ -763,7 +763,7 @@ describe('cito.vdom', function () {
                     var node = cito.vdom.create(_.cloneDeep(def.node));
                     callbackOldNodes = [];
                     cito.vdom.update(node, _.cloneDeep(def.node));
-                    expect(comparableNodes(callbackOldNodes)).to.eql(def.oldNodes);
+                    expect(normNodes(callbackOldNodes)).to.eql(normNodes(def.oldNodes));
                 });
             });
         });
@@ -818,7 +818,7 @@ describe('cito.vdom', function () {
 
             it('properties', function () {
                 expect(node.dom.virtualNode).to.be(node);
-                expect(node.dom.firstChild.virtualNode).to.be(node.children);
+                expect(node.dom.firstChild.virtualNode).to.be(node.children[0]);
 
                 var domParent = node.dom, domChild = domParent.firstChild;
                 cito.vdom.remove(node);
@@ -972,7 +972,7 @@ describe('cito.vdom', function () {
                     currentTargets.push(event.currentTarget);
                 };
                 dispatchEvent(node.dom.firstChild, createEvent('click'));
-                var domChild = node.children.dom,
+                var domChild = node.children[0].dom,
                     expectedCurrentTargets = [domChild, domChild, node.dom];
                 expect(thises).to.eql(expectedCurrentTargets);
                 expect(currentTargets).to.eql(expectedCurrentTargets);
@@ -1056,16 +1056,26 @@ describe('cito.vdom', function () {
         }
     }
 
-    function comparableNodes(nodes) {
-        if (nodes) {
-            if (_.isArray(nodes)) {
-                _.forEach(nodes, comparableNodes);
-            } else if (typeof nodes === 'object') {
-                delete nodes.dom;
-                comparableNodes(nodes.children);
+    function normNodes(nodes) {
+        return _.map(nodes, normNode);
+    }
+
+    function normNode(node) {
+        if (_.isArray(node)) {
+            return normNodes(node);
+        } else if (_.isString(node)) {
+            return {tag: '#', children: node};
+        } else {
+            node = {tag: node.tag, children: node.children};
+            if (node.tag.match(/[a-z0-9]+/)) {
+                var children = node.children;
+                if (!_.isArray(children)) {
+                    children = children || _.isString(children) ? [children] : [];
+                }
+                node.children = _.map(children, normNode);
             }
+            return node;
         }
-        return nodes;
     }
 
     var supportsEventConstructor = true;
@@ -1118,7 +1128,7 @@ describe('cito.vdom', function () {
     var expectPrototype = expect().constructor.prototype;
     expectPrototype.eqlDom = function (obj) {
         var html1 = getHtml(this.obj), html2 = getHtml(obj);
-        this.assert(comparableHtml(html1) === comparableHtml(html2),
+        this.assert(normHtml(html1) === normHtml(html2),
             function () {
                 return 'expected ' + html1 + ' to equal DOM ' + html2;
             },
@@ -1144,7 +1154,7 @@ describe('cito.vdom', function () {
     }
 
     // TODO compare dom/vdom instead of string
-    function comparableHtml(html) {
+    function normHtml(html) {
         html = html.toLowerCase();
         html = html.replace(/xmlns(:\w+)?=".*?"/g, '');
         html = html.replace(/style=""/g, '');
