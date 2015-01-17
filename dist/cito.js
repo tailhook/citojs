@@ -385,39 +385,56 @@ var cito = window.cito || {};
         }
     }
 
-    function updateChildren(domElement, element, oldChildren, children) {
-        // Update only child optimization for text and html nodes
-        var oldEndIndex = oldChildren.length - 1, endIndex = children.length - 1,
-            oldOnlyChild;
-        if (endIndex === 0) {
-            var onlyChild = children[0],
-                onlyChildText = getTextIfTextNode(onlyChild);
-            oldOnlyChild = oldChildren[0];
-            if (onlyChildText !== null) {
-                if (oldEndIndex !== 0 || onlyChildText !== getTextIfTextNode(oldOnlyChild)) {
-                    destroyNodes(oldChildren); // TODO avoid for same node type
-                    setTextContent(domElement, onlyChildText);
-                    return;
-                }
-            } else if (onlyChild.tag === '<') {
-                if (oldEndIndex !== 0 || oldOnlyChild.tag !== '<' || oldOnlyChild.children !== onlyChild.children) {
-                    destroyNodes(oldChildren); // TODO avoid for same node type
-                    domElement.innerHTML = onlyChild.children;
-                    return;
-                }
+    function updateOnlyChild(domElement, oldChildren, oldEndIndex, children) {
+        var child = children[0], oldChild = oldChildren[0],
+            childText = getTextIfTextNode(child),
+            update = (oldEndIndex !== 0),
+            sameType = false;
+        if (childText !== null) {
+            if (!update) {
+                var oldChildText = getTextIfTextNode(oldChild);
+                sameType = (oldChildText !== null);
+                update = (childText !== oldChildText);
             }
+            if (update) {
+                if (!sameType) {
+                    destroyNodes(oldChildren);
+                }
+                setTextContent(domElement, childText);
+            }
+        } else if (child.tag === '<') {
+            if (!update) {
+                sameType = (oldChild.tag === '<');
+                update = !sameType || (child.children !== oldChild.children);
+            }
+            if (update) {
+                if (!sameType) {
+                    destroyNodes(oldChildren);
+                }
+                domElement.innerHTML = child.children;
+            }
+        } else {
+            update = false;
         }
+        return update || sameType;
+    }
 
-        // Update multiple children
+    function updateChildren(domElement, element, oldChildren, children) {
+        var oldEndIndex = oldChildren.length - 1,
+            endIndex = children.length - 1;
+        if (endIndex === 0 && updateOnlyChild(domElement, oldChildren, oldEndIndex, children)) {
+            return;
+        }
         if (oldEndIndex === 0) {
-            oldOnlyChild = normIndex(oldChildren, 0);
+            var oldOnlyChild = normIndex(oldChildren, 0);
             oldOnlyChild.dom = domElement.firstChild;
             if (oldOnlyChild.tag === '<') {
                 oldOnlyChild.domLength = domElement.childNodes.length;
             }
         }
 
-        var oldStartIndex = 0, startIndex = 0,
+        var oldStartIndex = 0,
+            startIndex = 0,
             successful = true;
         outer: while (successful && oldStartIndex <= oldEndIndex && startIndex <= endIndex) {
             successful = false;
