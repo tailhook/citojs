@@ -246,7 +246,7 @@ describe('cito.vdom', function () {
                 html: '<div><b>t0</b><b>t1</b></div>'
             }
         ],
-        'ul': [
+        'lists': [
             {
                 name: 'empty',
                 node: {
@@ -293,7 +293,7 @@ describe('cito.vdom', function () {
                 html: '<ul><li>t0</li><li>t1</li><li>t2</li><li>t3</li><li>t4</li></ul>'
             }
         ],
-        'keyed ul': [
+        'keyed lists': [
             {
                 name: '0',
                 node: {
@@ -564,6 +564,320 @@ describe('cito.vdom', function () {
                 name: 'object color !important',
                 node: {tag: 'div', attrs: {style: {color: 'red !important'}}},
                 html: '<div style="color: red !important;"></div>'
+            }
+        ],
+        'simple fragments': [
+            {
+                name: 'fragment without children',
+                node: {tag: 'div', children: {}},
+                html: '<div></div>'
+            },
+            {
+                name: 'fragment with empty children array',
+                node: {tag: 'div', children: {children: []}},
+                html: '<div></div>'
+            },
+            {
+                name: 'fragment with null children',
+                node: {tag: 'div', children: {children: null}},
+                html: '<div></div>'
+            },
+            {
+                name: 'fragment with text children array',
+                node: {tag: 'div', children: {children: ['text']}},
+                html: '<div>text</div>'
+            },
+            {
+                name: 'fragment with text child',
+                node: {tag: 'div', children: {children: 'text'}},
+                html: '<div>text</div>'
+            }
+        ],
+        'surrounded fragments': [
+            {
+                name: 'div + empty fragment',
+                node: {
+                    tag: 'div',
+                    children: [
+                        {tag: 'div', children: 't0'},
+                        {
+                            children: []
+                        }
+                    ]
+                },
+                html: '<div><div>t0</div></div>'
+            },
+            {
+                name: 'div + fragment with 2 div',
+                node: {
+                    tag: 'div',
+                    children: [
+                        {tag: 'div', children: 't0'},
+                        {
+                            children: [
+                                {tag: 'div', children: 't1'},
+                                {tag: 'div', children: 't2'}
+                            ]
+                        }
+                    ]
+                },
+                html: '<div><div>t0</div><div>t1</div><div>t2</div></div>'
+            },
+            {
+                name: 'fragment with 2 div + div',
+                node: {
+                    tag: 'div',
+                    children: [
+                        {
+                            children: [
+                                {tag: 'div', children: 't1'},
+                                {tag: 'div', children: 't2'}
+                            ]
+                        },
+                        {tag: 'div', children: 't3'}
+                    ]
+                },
+                html: '<div><div>t1</div><div>t2</div><div>t3</div></div>'
+            },
+            {
+                name: 'fragment with 2 div',
+                node: {
+                    tag: 'div',
+                    children: [
+                        {
+                            children: [
+                                {tag: 'div', children: 't1'},
+                                {tag: 'div', children: 't2'}
+                            ]
+                        }
+                    ]
+                },
+                html: '<div><div>t1</div><div>t2</div></div>'
+            },
+            {
+                name: 'div + fragment with 3 div',
+                node: {
+                    tag: 'div',
+                    children: [
+                        {tag: 'div', children: 't0'},
+                        {
+                            children: [
+                                {tag: 'div', children: 't1'},
+                                {tag: 'div', children: 't2'},
+                                {tag: 'div', children: 't3'}
+                            ]
+                        }
+                    ]
+                },
+                html: '<div><div>t0</div><div>t1</div><div>t2</div><div>t3</div></div>'
+            },
+            {
+                name: 'div + fragment with 2 div + div',
+                node: {
+                    tag: 'div',
+                    children: [
+                        {tag: 'div', children: 't0'},
+                        {
+                            children: [
+                                {tag: 'div', children: 't1'},
+                                {tag: 'div', children: 't2'}
+                            ]
+                        },
+                        {tag: 'div', children: 't3'}
+                    ]
+                },
+                html: '<div><div>t0</div><div>t1</div><div>t2</div><div>t3</div></div>'
+            },
+            {
+                name: 'div + empty fragment + div',
+                node: {
+                    tag: 'div',
+                    children: [
+                        {tag: 'div', children: 't0'},
+                        {
+                            children: []
+                        },
+                        {tag: 'div', children: 't3'}
+                    ]
+                },
+                html: '<div><div>t0</div><div>t3</div></div>'
+            },
+            {
+                name: 'div + fragment with text + div',
+                node: {
+                    tag: 'div',
+                    children: [
+                        {tag: 'div', children: 't0'},
+                        {
+                            children: 't1'
+                        },
+                        {tag: 'div', children: 't3'}
+                    ]
+                },
+                html: '<div><div>t0</div>t1<div>t3</div></div>'
+            },
+            {
+                name: 'div + fragment with html + div',
+                node: {
+                    tag: 'div',
+                    children: [
+                        {tag: 'div', children: 't0'},
+                        {
+                            children: {tag: '<', children: '<b>t1</b>'}
+                        },
+                        {tag: 'div', children: 't3'}
+                    ]
+                },
+                html: '<div><div>t0</div><b>t1</b><div>t3</div></div>'
+            }
+        ],
+        'keyed fragments': [
+            {
+                name: '0',
+                node: {
+                    tag: 'ul',
+                    children: [
+                        {key: 0, children: [{tag: 'li', children: 't0.0'},{tag: 'li', children: 't0.1'}]}
+                    ]
+                },
+                html: '<ul><li>t0.0</li><li>t0.1</li></ul>'
+            },
+            {
+                name: '0-1',
+                node: {
+                    tag: 'ul',
+                    children: [
+                        {key: 0, children: [{tag: 'li', children: 't0.0'},{tag: 'li', children: 't0.1'}]},
+                        {key: 1, children: [{tag: 'li', children: 't1.0'},{tag: 'li', children: 't1.1'}]}
+                    ]
+                },
+                html: '<ul><li>t0.0</li><li>t0.1</li><li>t1.0</li><li>t1.1</li></ul>'
+            },
+            {
+                name: '1-0',
+                node: {
+                    tag: 'ul',
+                    children: [
+                        {key: 1, children: [{tag: 'li', children: 't1.0'},{tag: 'li', children: 't1.1'}]},
+                        {key: 0, children: [{tag: 'li', children: 't0.0'},{tag: 'li', children: 't0.1'}]}
+                    ]
+                },
+                html: '<ul><li>t1.0</li><li>t1.1</li><li>t0.0</li><li>t0.1</li></ul>'
+            },
+            {
+                name: '1',
+                node: {
+                    tag: 'ul',
+                    children: [
+                        {key: 1, children: [{tag: 'li', children: 't1.0'},{tag: 'li', children: 't1.1'}]}
+                    ]
+                },
+                html: '<ul><li>t1.0</li><li>t1.1</li></ul>'
+            },
+            {
+                name: '0-1-2',
+                node: {
+                    tag: 'ul',
+                    children: [
+                        {key: 0, children: [{tag: 'li', children: 't0.0'},{tag: 'li', children: 't0.1'}]},
+                        {key: 1, children: [{tag: 'li', children: 't1.0'},{tag: 'li', children: 't1.1'}]},
+                        {key: 2, children: [{tag: 'li', children: 't2.0'},{tag: 'li', children: 't2.1'}]}
+                    ]
+                },
+                html: '<ul><li>t0.0</li><li>t0.1</li><li>t1.0</li><li>t1.1</li><li>t2.0</li><li>t2.1</li></ul>'
+            },
+            {
+                name: '2-1-0',
+                node: {
+                    tag: 'ul',
+                    children: [
+                        {key: 2, children: [{tag: 'li', children: 't2.0'},{tag: 'li', children: 't2.1'}]},
+                        {key: 1, children: [{tag: 'li', children: 't1.0'},{tag: 'li', children: 't1.1'}]},
+                        {key: 0, children: [{tag: 'li', children: 't0.0'},{tag: 'li', children: 't0.1'}]}
+                    ]
+                },
+                html: '<ul><li>t2.0</li><li>t2.1</li><li>t1.0</li><li>t1.1</li><li>t0.0</li><li>t0.1</li></ul>'
+            },
+            {
+                name: '0-2',
+                node: {
+                    tag: 'ul',
+                    children: [
+                        {key: 0, children: [{tag: 'li', children: 't0.0'},{tag: 'li', children: 't0.1'}]},
+                        {key: 2, children: [{tag: 'li', children: 't2.0'},{tag: 'li', children: 't2.1'}]}
+                    ]
+                },
+                html: '<ul><li>t0.0</li><li>t0.1</li><li>t2.0</li><li>t2.1</li></ul>'
+            },
+            {
+                name: '2-0',
+                node: {
+                    tag: 'ul',
+                    children: [
+                        {key: 2, children: [{tag: 'li', children: 't2.0'},{tag: 'li', children: 't2.1'}]},
+                        {key: 0, children: [{tag: 'li', children: 't0.0'},{tag: 'li', children: 't0.1'}]}
+                    ]
+                },
+                html: '<ul><li>t2.0</li><li>t2.1</li><li>t0.0</li><li>t0.1</li></ul>'
+            }
+        ],
+        'nested fragments': [
+            {
+                name: 'fragment > text',
+                node: {
+                    tag: 'div',
+                    children: {children: {children: 't0'}}
+                },
+                html: '<div>t0</div>'
+            },
+            {
+                name: 'fragment > div',
+                node: {
+                    tag: 'div',
+                    children: {children: {tag: 'div', children: 't0'}}
+                },
+                html: '<div><div>t0</div></div>'
+            },
+            {
+                name: 'fragment > fragment > text',
+                node: {
+                    tag: 'div',
+                    children: {children: {children: 't00'}}
+                },
+                html: '<div>t00</div>'
+            },
+            {
+                name: 'fragment > fragment > text + text',
+                node: {
+                    tag: 'div',
+                    children: {children: {children: ['t00', 't01']}}
+                },
+                html: '<div>t00t01</div>'
+            },
+            {
+                name: 'fragment > fragment > html',
+                node: {
+                    tag: 'div',
+                    children: {children: {children: {tag: '<', children: '<b>t00</b>'}}}
+
+                },
+                html: '<div><b>t00</b></div>'
+            },
+            {
+                name: 'fragment > fragment > div',
+                node: {
+                    tag: 'div',
+                    children: {children: {children: {tag: 'div', children: 't00'}}}
+                },
+                html: '<div><div>t00</div></div>'
+            },
+            {
+                name: 'fragment > fragment > div + div',
+                node: {
+                    tag: 'div',
+                    children: {children: {children: [{tag: 'div', children: 't00'}, {tag: 'div', children: 't01'}]}}
+                },
+                html: '<div><div>t00</div><div>t01</div></div>'
             }
         ]
     };
