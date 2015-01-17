@@ -61,7 +61,7 @@ describe('cito.vdom', function () {
                 html: '<input required>'
             }
         ],
-        'div': [
+        'general': [
             {
                 name: 'children none',
                 node: {tag: 'div'},
@@ -113,6 +113,76 @@ describe('cito.vdom', function () {
                 html: '<div><!--comment 2--></div>'
             }
         ],
+        'text': [
+            {
+                name: 'text empty',
+                node: {
+                    tag: 'div', children: ''
+                },
+                html: '<div></div>'
+            },
+            {
+                name: 'text object empty',
+                node: {
+                    tag: 'div', children: {tag: '#', children: ''}
+                },
+                html: '<div></div>'
+            },
+            {
+                name: 'text',
+                node: {
+                    tag: 'div', children: 'text'
+                },
+                html: '<div>text</div>'
+            },
+            {
+                name: 'text object',
+                node: {
+                    tag: 'div', children: {tag: '#', children: 'text'}
+                },
+                html: '<div>text</div>'
+            },
+            {
+                name: 'element b + text empty',
+                node: {
+                    tag: 'div', children: [
+                        {tag: 'b', children: 't0'},
+                        ''
+                    ]
+                },
+                html: '<div><b>t0</b></div>'
+            },
+            {
+                name: 'element b + text',
+                node: {
+                    tag: 'div', children: [
+                        {tag: 'b', children: 't0'},
+                        't1'
+                    ]
+                },
+                html: '<div><b>t0</b>t1</div>'
+            },
+            {
+                name: 'text empty + element b',
+                node: {
+                    tag: 'div', children: [
+                        '',
+                        {tag: 'b', children: 't1'}
+                    ]
+                },
+                html: '<div><b>t1</b></div>'
+            },
+            {
+                name: 'text + element b',
+                node: {
+                    tag: 'div', children: [
+                        't0',
+                        {tag: 'b', children: 't1'}
+                    ]
+                },
+                html: '<div>t0<b>t1</b></div>'
+            }
+        ],
         'html': [
             {
                 name: 'html empty',
@@ -136,6 +206,16 @@ describe('cito.vdom', function () {
                 html: '<div><b>t0</b><b>t1</b></div>'
             },
             {
+                name: 'element b + html empty',
+                node: {
+                    tag: 'div', children: [
+                        {tag: 'b', children: 't0'},
+                        {tag: '<', children: ''}
+                    ]
+                },
+                html: '<div><b>t0</b></div>'
+            },
+            {
                 name: 'element b + html b',
                 node: {
                     tag: 'div', children: [
@@ -144,6 +224,16 @@ describe('cito.vdom', function () {
                     ]
                 },
                 html: '<div><b>t0</b><b>t1</b></div>'
+            },
+            {
+                name: 'html empty + element b',
+                node: {
+                    tag: 'div', children: [
+                        {tag: '<', children: ''},
+                        {tag: 'b', children: 't1'}
+                    ]
+                },
+                html: '<div><b>t1</b></div>'
             },
             {
                 name: 'html b + element b',

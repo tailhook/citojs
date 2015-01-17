@@ -47,25 +47,18 @@ var cito = window.cito || {};
     }
 
     function normChildren(node, children, oldChildren) {
-        var origChildren = children;
+        var origChildren = children, tag;
         if (isFunction(children)) {
             children = children(oldChildren);
         }
         if (!isArray(children)) {
-            children = children ? [children] : [];
+            // Empty text and html nodes must be ignored
+            children = (children && (children.children || ((tag = children.tag) !== '#' && tag !== '<'))) ? [children] : [];
         }
         if (origChildren !== children) {
             node.children = children;
         }
         return children;
-    }
-
-    function setTextContent(domElement, text) {
-        if (supportsTextContent) {
-            domElement.textContent = text;
-        } else {
-            domElement.innerText = text;
-        }
     }
 
     function moveChild(domElement, child, nextChild) {
@@ -88,9 +81,8 @@ var cito = window.cito || {};
             domNextChild.insertAdjacentHTML('beforebegin', html);
         } else {
             helperDiv.innerHTML = html;
-            var child;
-            while (child = helperDiv.firstChild) { // jshint ignore:line
-                domParent.insertBefore(child, domNextChild);
+            for (var domChild; domChild = helperDiv.firstChild;) { // jshint ignore:line
+                domParent.insertBefore(domChild, domNextChild);
             }
         }
     }
@@ -326,7 +318,22 @@ var cito = window.cito || {};
         }
     }
 
+    function getTextIfTextNode(node) {
+        return isString(node) ? node : (node.tag === '#') ? node.children : null;
+    }
+
     function createChildren(domElement, element, children, i, to, nextChild) {
+        if (i === 0 && to === 1 && children.length === 1) {
+            var onlyChild = children[0],
+                onlyChildText = getTextIfTextNode(onlyChild);
+            if (onlyChildText !== null) {
+                setTextContent(domElement, onlyChildText);
+                return;
+            } else if (onlyChild.tag === '<') {
+                domElement.innerHTML = onlyChild.children;
+                return;
+            }
+        }
         for (; i < to; i++) {
             createNode(normIndex(children, i), domElement, element, nextChild);
         }
@@ -334,8 +341,17 @@ var cito = window.cito || {};
 
     var range = supportsRange ? document.createRange() : null;
 
-    function removeChildren(domElement, children, from, to) {
-        for (var i = from; i < to; i++) {
+    function removeChildren(domElement, children, i, to) {
+        if (i === 0 && to === 1 && children.length === 1) {
+            var onlyChild = children[0];
+            if (getTextIfTextNode(onlyChild) !== null || onlyChild.tag === '<') {
+                for (var domChild; domChild = domElement.firstChild;) { // jshint ignore:line
+                    domElement.removeChild(domChild);
+                }
+                return;
+            }
+        }
+        for (; i < to; i++) {
             removeChild(domElement, children[i]);
         }
         // TODO use range for better performance with many children
@@ -361,11 +377,46 @@ var cito = window.cito || {};
         }
     }
 
-    function updateChildren(domElement, element, oldChildren, children) {
-        var oldStartIndex = 0, oldEndIndex = oldChildren.length - 1,
-            startIndex = 0, endIndex = children.length - 1,
-            successful = true;
+    function setTextContent(domElement, text) {
+        if (supportsTextContent) {
+            domElement.textContent = text;
+        } else {
+            domElement.innerText = text;
+        }
+    }
 
+    function updateChildren(domElement, element, oldChildren, children) {
+        // Update only child optimization for text and html nodes
+        var oldEndIndex = oldChildren.length - 1, endIndex = children.length - 1,
+            oldOnlyChild;
+        if (endIndex === 0) {
+            var onlyChild = children[0],
+                onlyChildText = getTextIfTextNode(onlyChild);
+            oldOnlyChild = oldChildren[0];
+            if (onlyChildText !== null) {
+                if (oldEndIndex !== 0 || onlyChildText !== getTextIfTextNode(oldOnlyChild)) {
+                    setTextContent(domElement, onlyChildText);
+                    return;
+                }
+            } else if (onlyChild.tag === '<') {
+                if (oldEndIndex !== 0 || oldOnlyChild.tag !== '<' || oldOnlyChild.children !== onlyChild.children) {
+                    domElement.innerHTML = onlyChild.children;
+                    return;
+                }
+            }
+        }
+
+        // Update multiple children
+        if (oldEndIndex === 0) {
+            oldOnlyChild = normIndex(oldChildren, 0);
+            oldOnlyChild.dom = domElement.firstChild;
+            if (oldOnlyChild.tag === '<') {
+                oldOnlyChild.domLength = domElement.childNodes.length;
+            }
+        }
+
+        var oldStartIndex = 0, startIndex = 0,
+            successful = true;
         outer: while (successful && oldStartIndex <= oldEndIndex && startIndex <= endIndex) {
             successful = false;
             var oldStartChild, oldEndChild, startChild, endChild;
