@@ -1007,6 +1007,24 @@ describe('cito.vdom', function () {
                 },
                 html: '<div><svg height="40" width="40"><circle cx="20" cy="20" r="10" stroke="black" stroke-width="1" fill="red"></circle></svg></div>',
                 namespaces: svgNamespaces
+            },
+            {
+                name: 'circle fragment',
+                node: {
+                    tag: 'svg',
+                    children: {children: [{tag: 'circle'}]}
+                },
+                html: '<svg><circle></circle></svg>',
+                namespaces: svgNamespaces
+            },
+            {
+                name: 'two circles fragment',
+                node: {
+                    tag: 'svg',
+                    children: {children: [{tag: 'circle'}, {tag: 'circle'}]}
+                },
+                html: '<svg><circle></circle><circle></circle></svg>',
+                namespaces: svgNamespaces
             }
         ];
     }
@@ -1463,7 +1481,6 @@ describe('cito.vdom', function () {
                 namespaces = flatNamespaces;
             }
             var namespace = namespaces[domNode.tagName.toLowerCase()];
-            console.log(domNode.tagName, namespace);
             if (namespace) {
                 expect(domNode.namespaceURI).to.be(namespace);
             }
