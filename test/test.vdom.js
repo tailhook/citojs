@@ -959,6 +959,27 @@ describe('cito.vdom', function () {
                 namespaces: svgNamespaces
             },
             {
+                name: 'two links',
+                node: {
+                    tag: 'svg',
+                    attrs: {height: 20, width: 40},
+                    children: [
+                        {
+                            tag: 'a',
+                            attrs: {'xlink:href': 'http://link1'},
+                            children: {tag: 'text', attrs: {x: 0, y: 0}, children: 'link1'}
+                        },
+                        {
+                            tag: 'a',
+                            attrs: {'xlink:href': 'http://link2'},
+                            children: {tag: 'text', attrs: {x: 0, y: 0}, children: 'link2'}
+                        }
+                    ]
+                },
+                html: '<svg height="20" width="40"><a xlink:href="http://link1"><text x="0" y="0">link1</text></a><a xlink:href="http://link2"><text x="0" y="0">link2</text></a></svg>',
+                namespaces: svgNamespaces
+            },
+            {
                 name: 'circle',
                 node: {
                     tag: 'svg',
@@ -1430,7 +1451,7 @@ describe('cito.vdom', function () {
         });
     }
 
-    function verifyNamespaces(node, namespaces, flat) {
+    function verifyNamespaces(domNode, namespaces, flat) {
         if (namespaces) {
             if (!flat) {
                 var flatNamespaces = {};
@@ -1441,11 +1462,12 @@ describe('cito.vdom', function () {
                 });
                 namespaces = flatNamespaces;
             }
-            var namespace = namespaces[node.tagName];
+            var namespace = namespaces[domNode.tagName.toLowerCase()];
+            console.log(domNode.tagName, namespace);
             if (namespace) {
-                expect(node.namespaceURI).to.be(namespace);
+                expect(domNode.namespaceURI).to.be(namespace);
             }
-            var attrs = node.attributes;
+            var attrs = domNode.attributes;
             for (var i = 0; i < attrs.length; i++) {
                 var attr = attrs[i];
                 namespace = namespaces[attr.name];
@@ -1454,8 +1476,8 @@ describe('cito.vdom', function () {
                     expect(attrNamespace).to.be(namespace);
                 }
             }
-            _.forEach(node.children, function (child) {
-                verifyNamespaces(child, namespaces, true);
+            _.forEach(domNode.children, function (domChild) {
+                verifyNamespaces(domChild, namespaces, true);
             });
         }
     }
