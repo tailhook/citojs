@@ -395,11 +395,13 @@ var cito = window.cito || {};
             oldOnlyChild = oldChildren[0];
             if (onlyChildText !== null) {
                 if (oldEndIndex !== 0 || onlyChildText !== getTextIfTextNode(oldOnlyChild)) {
+                    destroyNodes(oldChildren); // TODO avoid for same node type
                     setTextContent(domElement, onlyChildText);
                     return;
                 }
             } else if (onlyChild.tag === '<') {
                 if (oldEndIndex !== 0 || oldOnlyChild.tag !== '<' || oldOnlyChild.children !== onlyChild.children) {
+                    destroyNodes(oldChildren); // TODO avoid for same node type
                     domElement.innerHTML = onlyChild.children;
                     return;
                 }
@@ -602,29 +604,30 @@ var cito = window.cito || {};
     }
 
     function destroyNode(node) {
-        var domNode = node.dom,
-            events = node.events;
-        if (events) {
-            for (var eventType in events) {
-                removeEventHandler(domNode, eventType);
-            }
-        }
-        if (domNode.virtualNode) {
-            domNode.virtualNode = undefined;
-        }
-        // TODO call callback
-        var children = node.children;
-        if (children) {
-            if (isArray(children)) {
-                for (var i = 0, len = children.length; i < len; i++) {
-                    var child = children[i];
-                    if (child.tag) {
-                        destroyNode(child);
+        if (!isString(node)) {
+            var domNode = node.dom;
+            if (domNode) {
+                var events = node.events;
+                if (events) {
+                    for (var eventType in events) {
+                        removeEventHandler(domNode, eventType);
                     }
                 }
-            } else if (children.tag) {
-                destroyNode(children);
+                if (domNode.virtualNode) {
+                    domNode.virtualNode = undefined;
+                }
             }
+            // TODO call callback
+            var children = node.children;
+            if (!isString(children)) {
+                destroyNodes(children);
+            }
+        }
+    }
+
+    function destroyNodes(nodes) {
+        for (var i = 0, len = nodes.length; i < len; i++) {
+            destroyNode(nodes[i]);
         }
     }
 
