@@ -32,14 +32,32 @@ var cito = window.cito || {};
         return typeof value === 'function';
     }
 
+    function isPromise(value) {
+        return value.then !== undefined;
+    }
+
     function norm(node, oldNode) {
         var type = typeof node;
         return (type === 'string') ? {tag: '#', children: node} : (type === 'function') ? norm(node(oldNode), oldNode) : node;
     }
 
-    function normIndex(children, i, oldChild) {
-        var origChild = children[i],
+    function normIndex(element, children, i, oldChild) {
+        var origChild = children[i], child;
+        if (origChild && isPromise(origChild)) {
+            element.dom.virtualNode = element;
+            child = {};
+            var immediate = true;
+            origChild.then(function (newChild) {
+                if (immediate) {
+                    child = norm(newChild);
+                } else if (children[i] === child) {
+                    vdom.update(child, newChild);
+                }
+            });
+            immediate = false;
+        } else {
             child = norm(origChild, oldChild);
+        }
         if (origChild !== child) {
             children[i] = child;
         }
@@ -48,8 +66,22 @@ var cito = window.cito || {};
 
     function normChildren(node, children, oldChildren) {
         var origChildren = children, tag;
-        if (isFunction(children)) {
-            children = children(oldChildren);
+        if (children) {
+            if (isPromise(children)) {
+                node.dom.virtualNode = node;
+                children = [];
+                var immediate = true;
+                origChildren.then(function (newChildren) {
+                    if (immediate) {
+                        children = normChildren(node, newChildren, oldChildren);
+                    } else if (node.children === children) {
+                        vdom.updateChildren(node, newChildren);
+                    }
+                });
+                immediate = false;
+            } else if (isFunction(children)) {
+                children = children(oldChildren);
+            }
         }
         // TODO convert to array only after only child optimization
         if (!isArray(children)) {
@@ -111,8 +143,7 @@ var cito = window.cito || {};
     }
 
     function createNode(node, domParent, parentNs, hasDomSiblings, nextChild, replace) {
-        var domNode,
-            tag = node.tag, children = node.children;
+        var domNode, tag = node.tag, children = node.children;
         if (!tag) {
             createFragment(node, children, domParent, parentNs, hasDomSiblings, nextChild, replace);
         } else {
@@ -161,10 +192,14 @@ var cito = window.cito || {};
                     } else {
                         domNode = document.createElement(tag);
                     }
+                    node.dom = domNode;
                     updateElement(domNode, null, null, node, tag, node.attrs, node.events);
                     children = normChildren(node, children);
-                    createChildren(domNode, ns, children, 0, children.length, children.length > 1);
-                    break;
+                    createChildren(domNode, node, ns, children, 0, children.length, children.length > 1);
+                    if (domParent) {
+                        insertChild(domParent, domNode, nextChild, replace);
+                    }
+                    return;
             }
             node.dom = domNode;
             if (domParent) {
@@ -188,7 +223,7 @@ var cito = window.cito || {};
             hasDomSiblings = hasDomSiblings || childrenLength > 1;
             domLength = 0;
             for (var i = 0; i < childrenLength; i++) {
-                var child = normIndex(children, i);
+                var child = normIndex(node, children, i);
                 createNode(child, domParent, parentNs, hasDomSiblings, nextChild, false);
                 domLength += child.domLength || 1;
             }
@@ -363,7 +398,7 @@ var cito = window.cito || {};
         return isString(node) ? node : (node.tag === '#') ? node.children : null;
     }
 
-    function createChildren(domElement, parentNs, children, i, to, hasDomSiblings, nextChild) {
+    function createChildren(domElement, element, parentNs, children, i, to, hasDomSiblings, nextChild) {
         if (i === 0 && to === 1 && !hasDomSiblings) {
             var onlyChild = children[0],
                 onlyChildText = getTextIfTextNode(onlyChild);
@@ -376,7 +411,7 @@ var cito = window.cito || {};
             }
         }
         for (; i < to; i++) {
-            createNode(normIndex(children, i), domElement, parentNs, hasDomSiblings, nextChild);
+            createNode(normIndex(element, children, i), domElement, parentNs, hasDomSiblings, nextChild);
         }
     }
 
@@ -471,7 +506,7 @@ var cito = window.cito || {};
         }
 
         if (oldEndIndex === 0) {
-            var oldOnlyChild = normIndex(oldChildren, 0);
+            var oldOnlyChild = normIndex(element, oldChildren, 0);
             if (!oldOnlyChild.dom) {
                 oldOnlyChild.dom = domElement.firstChild;
                 if (oldOnlyChild.tag === '<') {
@@ -488,7 +523,7 @@ var cito = window.cito || {};
             var oldStartChild, oldEndChild, startChild, endChild;
 
             oldStartChild = oldChildren[oldStartIndex];
-            startChild = normIndex(children, startIndex, oldStartChild);
+            startChild = normIndex(element, children, startIndex, oldStartChild);
             while (oldStartChild.key === startChild.key) {
                 nextChild = oldChildren[oldStartIndex + 1] || outerNextChild;
                 updateNode(oldStartChild, startChild, domElement, ns, hasDomSiblings, nextChild);
@@ -497,11 +532,11 @@ var cito = window.cito || {};
                     break outer;
                 }
                 oldStartChild = oldChildren[oldStartIndex];
-                startChild = normIndex(children, startIndex, oldStartChild);
+                startChild = normIndex(element, children, startIndex, oldStartChild);
                 successful = true;
             }
             oldEndChild = oldChildren[oldEndIndex];
-            endChild = normIndex(children, endIndex, oldEndChild);
+            endChild = normIndex(element, children, endIndex, oldEndChild);
             while (oldEndChild.key === endChild.key) {
                 nextChild = children[endIndex + 1] || outerNextChild;
                 updateNode(oldEndChild, endChild, domElement, ns, hasDomSiblings, nextChild);
@@ -510,7 +545,7 @@ var cito = window.cito || {};
                     break outer;
                 }
                 oldEndChild = oldChildren[oldEndIndex];
-                endChild = normIndex(children, endIndex);
+                endChild = normIndex(element, children, endIndex);
                 successful = true;
             }
             while (oldStartChild.key === endChild.key) {
@@ -522,7 +557,7 @@ var cito = window.cito || {};
                     break outer;
                 }
                 oldStartChild = oldChildren[oldStartIndex];
-                endChild = normIndex(children, endIndex);
+                endChild = normIndex(element, children, endIndex);
                 successful = true;
             }
             while (oldEndChild.key === startChild.key) {
@@ -534,14 +569,14 @@ var cito = window.cito || {};
                     break outer;
                 }
                 oldEndChild = oldChildren[oldEndIndex];
-                startChild = normIndex(children, startIndex);
+                startChild = normIndex(element, children, startIndex);
                 successful = true;
             }
         }
 
         if (oldStartIndex > oldEndIndex) {
-            nextChild = normIndex(children, endIndex + 1) || outerNextChild;
-            createChildren(domElement, ns, children, startIndex, endIndex + 1, hasDomSiblings, nextChild);
+            nextChild = normIndex(element, children, endIndex + 1) || outerNextChild;
+            createChildren(domElement, element, ns, children, startIndex, endIndex + 1, hasDomSiblings, nextChild);
         } else if (startIndex > endIndex) {
             removeChildren(domElement, oldChildren, oldStartIndex, oldEndIndex + 1);
         } else {
@@ -554,7 +589,7 @@ var cito = window.cito || {};
                 oldChildrenMap[oldChild.key] = oldChild;
                 oldNextChild = oldChild;
             }
-            nextChild = normIndex(children, endIndex + 1) || outerNextChild;
+            nextChild = normIndex(element, children, endIndex + 1) || outerNextChild;
             for (i = endIndex; i >= startIndex; i--) {
                 var child = children[i],
                     key = child.key;
@@ -640,8 +675,7 @@ var cito = window.cito || {};
     }
 
     function updateNode(oldNode, node, domParent, parentNs, hasDomSiblings, nextChild) {
-        var domNode,
-            tag = node.tag,
+        var domNode, tag = node.tag,
             oldChildren = oldNode.children, children = node.children;
         if (oldNode.tag !== tag) {
             createNode(node, domParent, parentNs, hasDomSiblings, oldNode, true);
@@ -649,8 +683,6 @@ var cito = window.cito || {};
             updateFragment(oldNode, oldChildren, node, children, domParent, parentNs, hasDomSiblings, nextChild);
         } else {
             // Element
-            var ns = oldNode.ns;
-            if (ns) node.ns = ns;
             domNode = oldNode.dom;
             switch (tag) {
                 case '#':
@@ -658,6 +690,7 @@ var cito = window.cito || {};
                     if (oldChildren !== children) {
                         domNode.nodeValue = children;
                     }
+                    node.dom = domNode;
                     break;
                 case '<':
                     if (oldChildren !== children) {
@@ -666,13 +699,15 @@ var cito = window.cito || {};
                         node.dom = oldNode.dom;
                         node.domLength = oldNode.domLength;
                     }
-                    return;
+                    break;
                 default:
+                    var ns = oldNode.ns;
+                    if (ns) node.ns = ns;
+                    node.dom = domNode;
                     updateElement(domNode, oldNode.attrs, oldNode.events, node, tag, node.attrs, node.events);
                     updateChildren(domNode, node, ns, oldChildren, children, false);
                     break;
             }
-            node.dom = domNode;
         }
     }
 
@@ -768,6 +803,12 @@ var cito = window.cito || {};
             updateNode(oldNode, node, oldNode.dom.parentNode);
             writeObject(node, oldNode);
             return oldNode;
+        },
+        updateChildren: function (element, children) {
+            var oldChildren = element.children;
+            children = normChildren(element, children, oldChildren);
+            updateChildren(element.dom, element, element.ns, oldChildren, children);
+            element.children = children;
         },
         remove: function (node) {
             var domParent = node.dom.parentNode;

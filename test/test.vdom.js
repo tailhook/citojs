@@ -882,6 +882,155 @@ describe('cito.vdom', function () {
         ]
     };
 
+    function immediatePromise(valueCallback) {
+        return {then: function (thenCallback) {
+            thenCallback(valueCallback());
+        }};
+    }
+
+    function timeoutPromise(valueCallback) {
+        return {then: function (thenCallback) {
+            window.setTimeout(function () {
+                thenCallback(valueCallback());
+            }, 0);
+        }};
+    }
+
+    domDefs['promise'] = [
+        {
+            name: 'children immediate',
+            node: {
+                tag: 'ul', children: immediatePromise(function () {
+                    return [
+                        {tag: 'li', children: 't0'}
+                    ]
+                })
+            },
+            html: '<ul><li>t0</li></ul>',
+            html2: '<ul><li>t0</li></ul>'
+        },
+        {
+            name: 'children timeout',
+            node: {
+                tag: 'ul', children: timeoutPromise(function () {
+                    return [
+                        {tag: 'li', children: 't0'}
+                    ]
+                })
+            },
+            html: '<ul></ul>',
+            html2: '<ul><li>t0</li></ul>'
+        },
+        {
+            name: 'child immediate',
+            node: {
+                tag: 'ul', children: [
+                    immediatePromise(function () {
+                        return {tag: 'li', children: 't0'};
+                    })
+                ]
+            },
+            html: '<ul><li>t0</li></ul>',
+            html2: '<ul><li>t0</li></ul>'
+        },
+        {
+            name: 'child timeout',
+            node: {
+                tag: 'ul', children: [
+                    timeoutPromise(function () {
+                        return {tag: 'li', children: 't0'};
+                    })
+                ]
+            },
+            html: '<ul></ul>',
+            html2: '<ul><li>t0</li></ul>'
+        },
+        {
+            name: 'child immediate before',
+            node: {
+                tag: 'ul', children: [
+                    immediatePromise(function () {
+                        return {tag: 'li', children: 't0'}
+                    }),
+                    {tag: 'li', children: 't1'}
+                ]
+            },
+            html: '<ul><li>t0</li><li>t1</li></ul>',
+            html2: '<ul><li>t0</li><li>t1</li></ul>'
+        },
+        {
+            name: 'child timeout before',
+            node: {
+                tag: 'ul', children: [
+                    timeoutPromise(function () {
+                        return {tag: 'li', children: 't0'}
+                    }),
+                    {tag: 'li', children: 't1'}
+                ]
+            },
+            html: '<ul><li>t1</li></ul>',
+            html2: '<ul><li>t0</li><li>t1</li></ul>'
+        },
+        {
+            name: 'child immediate after',
+            node: {
+                tag: 'ul', children: [
+                    {tag: 'li', children: 't0'},
+                    immediatePromise(function () {
+                        return {tag: 'li', children: 't1'}
+                    })
+                ]
+            },
+            html: '<ul><li>t0</li><li>t1</li></ul>',
+            html2: '<ul><li>t0</li><li>t1</li></ul>'
+        },
+        {
+            name: 'child timeout after',
+            node: {
+                tag: 'ul', children: [
+                    {tag: 'li', children: 't0'},
+                    timeoutPromise(function () {
+                        return {tag: 'li', children: 't1'}
+                    })
+                ]
+            },
+            html: '<ul><li>t0</li></ul>',
+            html2: '<ul><li>t0</li><li>t1</li></ul>'
+        },
+        {
+            name: 'two children timeout',
+            node: {
+                tag: 'ul', children: [
+                    timeoutPromise(function () {
+                        return {tag: 'li', children: 't0'}
+                    }),
+                    timeoutPromise(function () {
+                        return {tag: 'li', children: 't1'}
+                    })
+                ]
+            },
+            html: '<ul></ul>',
+            html2: '<ul><li>t0</li><li>t1</li></ul>'
+        },
+        {
+            name: 'wrapped child timeout',
+            node: {
+                tag: 'div',
+                children: [
+                    {
+                        tag: 'ul', children: [
+                        timeoutPromise(function () {
+                            return {tag: 'li', children: 't0'}
+                        })
+                    ]
+                    }
+                ]
+            },
+            html: '<div><ul></ul></div>',
+            html2: '<div><ul><li>t0</li></ul></div>'
+        }
+    ];
+
     var ulTwoLi = {
         tag: 'ul',
         children: [
@@ -1081,6 +1230,19 @@ describe('cito.vdom', function () {
                             expect(node.dom).to.eqlDom(def.html);
                             verifyNamespaces(node.dom, def.namespaces);
                         });
+                    });
+                });
+                describe(groupName + ' after timeout', function () {
+                    _.forEach(defs, function (def) {
+                        if (def.html2) {
+                            it(def.name, function (done) {
+                                var node = cito.vdom.create(_.cloneDeep(def.node));
+                                window.setTimeout(function () {
+                                    expect(node.dom).to.eqlDom(def.html2);
+                                    done();
+                                }, 1);
+                            });
+                        }
                     });
                 });
             });
