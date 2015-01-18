@@ -111,13 +111,23 @@ var cito = window.cito || {};
         }
     }
 
-    function insertBeforeHTML(domParent, html, domNextChild) {
-        if (domNextChild.nodeType === 1) {
-            domNextChild.insertAdjacentHTML('beforebegin', html);
+    function insertAdjacentHTML(node, position, htmlContent) {
+        if (node.insertAdjacentHTML) {
+            node.insertAdjacentHTML(position, htmlContent);
         } else {
-            helperDiv.innerHTML = html;
-            for (var domChild; domChild = helperDiv.firstChild;) { // jshint ignore:line
-                domParent.insertBefore(domChild, domNextChild);
+            var child;
+            helperDiv.innerHTML = htmlContent;
+            if (position === 'beforebegin') {
+                var parentNode = node.parentNode;
+                while (child = helperDiv.firstChild) { // jshint ignore:line
+                    parentNode.insertBefore(child, node);
+                }
+            } else if (position === 'beforeend') {
+                while (child = helperDiv.firstChild) { // jshint ignore:line
+                    node.appendChild(child);
+                }
+            } else {
+                throw new Error('Unsupported: ' + position);
             }
         }
     }
@@ -162,10 +172,10 @@ var cito = window.cito || {};
                         if (nextChild) {
                             var domNextChild = nextChild.dom,
                                 domPrevChild = domNextChild.previousSibling;
-                            insertBeforeHTML(domParent, children, domNextChild);
+                            insertAdjacentHTML(domNextChild, 'beforebegin', children);
                             domNode = domPrevChild ? domPrevChild.nextSibling : domParent.firstChild;
                         } else {
-                            domParent.insertAdjacentHTML('beforeend', children);
+                            insertAdjacentHTML(domParent, 'beforeend', children);
                             domNode = domChildren[prevLength];
                         }
                         node.dom = domNode;
