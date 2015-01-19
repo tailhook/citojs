@@ -546,7 +546,7 @@ var cito = window.cito || {};
                 successful = true;
             }
             oldEndChild = oldChildren[oldEndIndex];
-            endChild = normIndex(element, children, endIndex, oldEndChild);
+            endChild = normIndex(element, children, endIndex);
             while (oldEndChild.key === endChild.key) {
                 nextChild = children[endIndex + 1] || outerNextChild;
                 updateNode(oldEndChild, endChild, domElement, ns, hasDomSiblings, nextChild);
