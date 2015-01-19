@@ -49,7 +49,7 @@ var cito = window.cito || {};
             var immediate = true;
             origChild.then(function (newChild) {
                 if (immediate) {
-                    child = norm(newChild);
+                    child = norm(newChild, oldChild);
                 } else if (children[i] === child) {
                     vdom.update(child, newChild);
                 }
