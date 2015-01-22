@@ -38,7 +38,13 @@ var cito = window.cito || {};
 
     function norm(node, oldNode) {
         var type = typeof node;
-        return (type === 'string') ? {tag: '#', children: node} : (type === 'function') ? norm(node(oldNode), oldNode) : node;
+        if (type === 'string') {
+            node = {tag: '#', children: node};
+        } else if (type === 'function') {
+            node = node(oldNode);
+            node = (node === undefined) ? oldNode : norm(node, oldNode);
+        }
+        return node;
     }
 
     function normIndex(element, children, i, oldChild) {
@@ -81,6 +87,9 @@ var cito = window.cito || {};
                 immediate = false;
             } else if (isFunction(children)) {
                 children = children(oldChildren);
+                if (children === undefined) {
+                    children = oldChildren;
+                }
             }
         }
         // TODO convert to array only after only child optimization
@@ -507,6 +516,9 @@ var cito = window.cito || {};
 
     function updateChildren(domElement, element, ns, oldChildren, children, hasDomSiblings, outerNextChild) {
         children = normChildren(element, children, oldChildren);
+        if (children === oldChildren) {
+            return;
+        }
 
         var oldEndIndex = oldChildren.length - 1,
             endIndex = children.length - 1;
@@ -685,6 +697,10 @@ var cito = window.cito || {};
     }
 
     function updateNode(oldNode, node, domParent, parentNs, hasDomSiblings, nextChild) {
+        if (node === oldNode) {
+            return;
+        }
+
         var domNode, tag = node.tag,
             oldChildren = oldNode.children, children = node.children;
         if (oldNode.tag !== tag) {
@@ -723,6 +739,10 @@ var cito = window.cito || {};
 
     function updateFragment(oldNode, oldChildren, node, children, domParent, parentNs, hasDomSiblings, nextChild) {
         children = normChildren(node, children, oldChildren);
+        if (children === oldChildren) {
+            return;
+        }
+
         var domNode, domLength,
             oldChildrenLength = oldChildren.length,
             childrenLength = children.length;

@@ -1080,6 +1080,48 @@ describe('cito.vdom', function () {
         }
     ];
 
+    domDefs['callback retain'] = [
+        {
+            name: 'children',
+            node: {
+                tag: 'ul',
+                children: function (oldChildren) {
+                    if (!oldChildren) {
+                        return [
+                            {tag: 'li', children: 't0'},
+                            {tag: 'li', children: 't1'}
+                        ];
+                    }
+                }
+            },
+            html: '<ul><li>t0</li><li>t1</li></ul>',
+            updateOnlySelf: true
+        },
+        {
+            name: 'child',
+            node: {
+                tag: 'ul',
+                children: [
+                    function (oldChild) { if (!oldChild) return {tag: 'li', children: 't0'}}
+                ]
+            },
+            html: '<ul><li>t0</li></ul>',
+            updateOnlySelf: true
+        },
+        {
+            name: 'two children',
+            node: {
+                tag: 'ul',
+                children: [
+                    function (oldChild) { if (!oldChild) return {tag: 'li', children: 't0'}},
+                    function (oldChild) { if (!oldChild) return {tag: 'li', children: 't1'}}
+                ]
+            },
+            html: '<ul><li>t0</li><li>t1</li></ul>',
+            updateOnlySelf: true
+        }
+    ];
+
     var helperDiv = document.createElement('div');
     function supportsNamespace(tag) {
         helperDiv.innerHTML = '<' + tag + '>';
@@ -1337,6 +1379,9 @@ describe('cito.vdom', function () {
             _.forEach(domDefs, function (defs, groupName) {
                 describe(groupName, function () {
                     forEachCombination(domDefs[groupName], function (def1, def2) {
+                        if ((def1.updateOnlySelf || def2.updateOnlySelf) && def1 !== def2) {
+                            return;
+                        }
                         it(def1.name + ' -> ' + def2.name, function () {
                             var node = cito.vdom.create(_.cloneDeep(def1.node));
                             cito.vdom.update(node, _.cloneDeep(def2.node));
