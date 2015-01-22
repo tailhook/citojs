@@ -47,10 +47,9 @@ var cito = window.cito || {};
         return node;
     }
 
-    function normIndex(element, children, i, oldChild) {
+    function normIndex(children, i, oldChild) {
         var origChild = children[i], child;
         if (origChild && isPromise(origChild)) {
-            element.dom.virtualNode = element;
             child = {};
             var immediate = true;
             origChild.then(function (newChild) {
@@ -74,7 +73,6 @@ var cito = window.cito || {};
         var origChildren = children, tag;
         if (children) {
             if (isPromise(children)) {
-                node.dom.virtualNode = node;
                 children = [];
                 var immediate = true;
                 origChildren.then(function (newChildren) {
@@ -242,7 +240,7 @@ var cito = window.cito || {};
             hasDomSiblings = hasDomSiblings || childrenLength > 1;
             domLength = 0;
             for (var i = 0; i < childrenLength; i++) {
-                var child = normIndex(node, children, i);
+                var child = normIndex(children, i);
                 createNode(child, domParent, parentNs, hasDomSiblings, nextChild, false);
                 domLength += child.domLength || 1;
             }
@@ -430,7 +428,7 @@ var cito = window.cito || {};
             }
         }
         for (; i < to; i++) {
-            createNode(normIndex(element, children, i), domElement, parentNs, hasDomSiblings, nextChild);
+            createNode(normIndex(children, i), domElement, parentNs, hasDomSiblings, nextChild);
         }
     }
 
@@ -528,7 +526,7 @@ var cito = window.cito || {};
         }
 
         if (oldEndIndex === 0) {
-            var oldOnlyChild = normIndex(element, oldChildren, 0);
+            var oldOnlyChild = normIndex(oldChildren, 0);
             if (!oldOnlyChild.dom) {
                 oldOnlyChild.dom = domElement.firstChild;
                 if (oldOnlyChild.tag === '<') {
@@ -545,7 +543,7 @@ var cito = window.cito || {};
             var oldStartChild, oldEndChild, startChild, endChild;
 
             oldStartChild = oldChildren[oldStartIndex];
-            startChild = normIndex(element, children, startIndex, oldStartChild);
+            startChild = normIndex(children, startIndex, oldStartChild);
             while (oldStartChild.key === startChild.key) {
                 nextChild = oldChildren[oldStartIndex + 1] || outerNextChild;
                 updateNode(oldStartChild, startChild, domElement, ns, hasDomSiblings, nextChild);
@@ -554,11 +552,11 @@ var cito = window.cito || {};
                     break outer;
                 }
                 oldStartChild = oldChildren[oldStartIndex];
-                startChild = normIndex(element, children, startIndex, oldStartChild);
+                startChild = normIndex(children, startIndex, oldStartChild);
                 successful = true;
             }
             oldEndChild = oldChildren[oldEndIndex];
-            endChild = normIndex(element, children, endIndex);
+            endChild = normIndex(children, endIndex);
             while (oldEndChild.key === endChild.key) {
                 nextChild = children[endIndex + 1] || outerNextChild;
                 updateNode(oldEndChild, endChild, domElement, ns, hasDomSiblings, nextChild);
@@ -567,7 +565,7 @@ var cito = window.cito || {};
                     break outer;
                 }
                 oldEndChild = oldChildren[oldEndIndex];
-                endChild = normIndex(element, children, endIndex);
+                endChild = normIndex(children, endIndex);
                 successful = true;
             }
             while (oldStartChild.key === endChild.key) {
@@ -579,7 +577,7 @@ var cito = window.cito || {};
                     break outer;
                 }
                 oldStartChild = oldChildren[oldStartIndex];
-                endChild = normIndex(element, children, endIndex);
+                endChild = normIndex(children, endIndex);
                 successful = true;
             }
             while (oldEndChild.key === startChild.key) {
@@ -591,13 +589,13 @@ var cito = window.cito || {};
                     break outer;
                 }
                 oldEndChild = oldChildren[oldEndIndex];
-                startChild = normIndex(element, children, startIndex);
+                startChild = normIndex(children, startIndex);
                 successful = true;
             }
         }
 
         if (oldStartIndex > oldEndIndex) {
-            nextChild = normIndex(element, children, endIndex + 1) || outerNextChild;
+            nextChild = normIndex(children, endIndex + 1) || outerNextChild;
             createChildren(domElement, element, ns, children, startIndex, endIndex + 1, hasDomSiblings, nextChild);
         } else if (startIndex > endIndex) {
             removeChildren(domElement, oldChildren, oldStartIndex, oldEndIndex + 1);
@@ -611,7 +609,7 @@ var cito = window.cito || {};
                 oldChildrenMap[oldChild.key] = oldChild;
                 oldNextChild = oldChild;
             }
-            nextChild = normIndex(element, children, endIndex + 1) || outerNextChild;
+            nextChild = normIndex(children, endIndex + 1) || outerNextChild;
             for (i = endIndex; i >= startIndex; i--) {
                 var child = children[i],
                     key = child.key;
