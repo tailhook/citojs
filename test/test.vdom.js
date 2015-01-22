@@ -907,7 +907,7 @@ describe('cito.vdom', function () {
                 })
             },
             html: '<ul><li>t0</li></ul>',
-            html2: '<ul><li>t0</li></ul>'
+            htmlDelayed: '<ul><li>t0</li></ul>'
         },
         {
             name: 'children timeout',
@@ -919,7 +919,7 @@ describe('cito.vdom', function () {
                 })
             },
             html: '<ul></ul>',
-            html2: '<ul><li>t0</li></ul>'
+            htmlDelayed: '<ul><li>t0</li></ul>'
         },
         {
             name: 'child immediate',
@@ -931,7 +931,7 @@ describe('cito.vdom', function () {
                 ]
             },
             html: '<ul><li>t0</li></ul>',
-            html2: '<ul><li>t0</li></ul>'
+            htmlDelayed: '<ul><li>t0</li></ul>'
         },
         {
             name: 'child timeout',
@@ -943,7 +943,7 @@ describe('cito.vdom', function () {
                 ]
             },
             html: '<ul></ul>',
-            html2: '<ul><li>t0</li></ul>'
+            htmlDelayed: '<ul><li>t0</li></ul>'
         },
         {
             name: 'child immediate before',
@@ -956,7 +956,7 @@ describe('cito.vdom', function () {
                 ]
             },
             html: '<ul><li>t0</li><li>t1</li></ul>',
-            html2: '<ul><li>t0</li><li>t1</li></ul>'
+            htmlDelayed: '<ul><li>t0</li><li>t1</li></ul>'
         },
         {
             name: 'child timeout before',
@@ -969,7 +969,7 @@ describe('cito.vdom', function () {
                 ]
             },
             html: '<ul><li>t1</li></ul>',
-            html2: '<ul><li>t0</li><li>t1</li></ul>'
+            htmlDelayed: '<ul><li>t0</li><li>t1</li></ul>'
         },
         {
             name: 'child immediate after',
@@ -982,7 +982,7 @@ describe('cito.vdom', function () {
                 ]
             },
             html: '<ul><li>t0</li><li>t1</li></ul>',
-            html2: '<ul><li>t0</li><li>t1</li></ul>'
+            htmlDelayed: '<ul><li>t0</li><li>t1</li></ul>'
         },
         {
             name: 'child timeout after',
@@ -995,7 +995,7 @@ describe('cito.vdom', function () {
                 ]
             },
             html: '<ul><li>t0</li></ul>',
-            html2: '<ul><li>t0</li><li>t1</li></ul>'
+            htmlDelayed: '<ul><li>t0</li><li>t1</li></ul>'
         },
         {
             name: 'two children timeout',
@@ -1010,7 +1010,7 @@ describe('cito.vdom', function () {
                 ]
             },
             html: '<ul></ul>',
-            html2: '<ul><li>t0</li><li>t1</li></ul>'
+            htmlDelayed: '<ul><li>t0</li><li>t1</li></ul>'
         },
         {
             name: 'wrapped child timeout',
@@ -1027,7 +1027,7 @@ describe('cito.vdom', function () {
                 ]
             },
             html: '<div><ul></ul></div>',
-            html2: '<div><ul><li>t0</li></ul></div>'
+            htmlDelayed: '<div><ul><li>t0</li></ul></div>'
         }
     ];
 
@@ -1232,13 +1232,13 @@ describe('cito.vdom', function () {
                         });
                     });
                 });
-                describe(groupName + ' after timeout', function () {
+                describe(groupName + ' after delay', function () {
                     _.forEach(defs, function (def) {
-                        if (def.html2) {
+                        if (def.htmlDelayed) {
                             it(def.name, function (done) {
                                 var node = cito.vdom.create(_.cloneDeep(def.node));
                                 window.setTimeout(function () {
-                                    expect(node.dom).to.eqlDom(def.html2);
+                                    expect(node.dom).to.eqlDom(def.htmlDelayed);
                                     done();
                                 }, 1);
                             });
