@@ -803,7 +803,7 @@ var cito = window.cito || {};
         }
     }
 
-    function writeObject(source, target) {
+    function copyObjectProps(source, target) {
         var key;
         for (key in source) {
             target[key] = source[key];
@@ -829,7 +829,7 @@ var cito = window.cito || {};
         update: function (oldNode, node) {
             node = norm(node, oldNode);
             updateNode(oldNode, node, oldNode.dom.parentNode);
-            writeObject(node, oldNode);
+            copyObjectProps(node, oldNode);
             return oldNode;
         },
         updateChildren: function (element, children) {
