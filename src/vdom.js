@@ -72,13 +72,16 @@ var cito = window.cito || {};
     function normChildren(node, children, oldChildren) {
         var origChildren = children, tag;
         if (children) {
+            // TODO move promise support into utility function
             if (isPromise(children)) {
                 children = [];
                 var immediate = true;
                 origChildren.then(function (newChildren) {
                     if (immediate) {
                         children = normChildren(node, newChildren, oldChildren);
-                    } else if (node.children === children) {
+                    }
+                    // TODO if the parent has been updated too, then this is misleading
+                    else if (node.children === children) {
                         vdom.updateChildren(node, newChildren);
                     }
                 });
@@ -828,6 +831,7 @@ var cito = window.cito || {};
         },
         update: function (oldNode, node) {
             node = norm(node, oldNode);
+            // TODO should detect first whether the node has already been rendered
             updateNode(oldNode, node, oldNode.dom.parentNode);
             copyObjectProps(node, oldNode);
             return oldNode;
