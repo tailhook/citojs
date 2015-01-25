@@ -396,6 +396,7 @@ var cito = window.cito || {};
             if (onType in domElement) {
                 domElement[onType] = eventHandler;
             } else {
+                // TODO bind element to event handler + tests
                 domElement.attachEvent(onType, eventHandler);
             }
         }
