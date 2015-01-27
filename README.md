@@ -147,6 +147,30 @@ The element node is the most basic node type. Examples:
 {tag: 'span', children: 'Text ...'}
 ```
 
+###### Attributes
+
+Element attributes can be set with the `attrs` property. The attribute name is always the same as in HTML. If you provide a boolean for the attribute value, the attribute will be added with an empty string if it is `true` and removed otherwise.
+
+```javascript
+// Element with an id and class
+{tag: 'input', attrs: {id: 'name-field', 'class': 'important-field'}}
+
+// Input element which is required
+{tag: 'input', attrs: {required: true}}
+```
+
+###### Inline Style
+
+To style an element, you can either use a string or an object. The object will update only changed properties while the string will simply overwrite the style attribute. The style property name is in both cases the same name as you would use for inline styles.
+
+```javascript
+// Element with style string
+{tag: 'input', attrs: {style: 'border-bottom: 1px solid black; color: gray;'}}
+
+// Element with style object
+{tag: 'input', attrs: {style: 'border-bottom': '1px solid black', color: 'gray'}}
+```
+
 ##### Text Node
 
 Usually, you will use text nodes like this:
