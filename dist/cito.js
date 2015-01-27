@@ -382,7 +382,8 @@ var cito = window.cito || {};
             case 'textarea':
                 return attrName === 'value';
             case 'select':
-                return attrName === 'selectedIndex';
+                // TODO these properties must only be set after the options have been added
+                return attrName === 'value' || attrName === 'selectedIndex';
             case 'option':
                 return attrName === 'selected';
         }
@@ -396,6 +397,7 @@ var cito = window.cito || {};
             if (onType in domElement) {
                 domElement[onType] = eventHandler;
             } else {
+                // TODO bind element to event handler + tests
                 domElement.attachEvent(onType, eventHandler);
             }
         }
