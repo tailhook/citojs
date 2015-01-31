@@ -1311,7 +1311,21 @@ describe('cito.vdom', function () {
             node1: {tag: 'input', attrs: {value: 'val1'}},
             node2: {tag: 'input', attrs: {value: 'val2'}},
             prop: 'value',
-            value1: 'val1', valueIn1: 'val in1', value2: 'val2'
+            value1: 'val1', valueExt1: 'val in1', value2: 'val2'
+        },
+        {
+            name: 'textarea',
+            node1: {tag: 'textarea', attrs: {value: 'val1'}},
+            node2: {tag: 'textarea', attrs: {value: 'val2'}},
+            prop: 'value',
+            value1: 'val1', value2: 'val2'
+        },
+        {
+            name: 'textarea external change',
+            node1: {tag: 'textarea', attrs: {value: 'val1'}},
+            node2: {tag: 'textarea', attrs: {value: 'val2'}},
+            prop: 'value',
+            value1: 'val1', valueExt1: 'val in1', value2: 'val2'
         },
         {
             name: 'checkbox',
@@ -1423,9 +1437,9 @@ describe('cito.vdom', function () {
                 it(def.name, function () {
                     var node = cito.vdom.create(_.cloneDeep(def.node1));
                     expect(node.dom[def.prop]).to.be(def.value1);
-                    if (def.valueIn1) {
-                        node.dom[def.prop] = def.valueIn1;
-                        expect(node.dom[def.prop]).to.be(def.valueIn1);
+                    if (def.valueExt1) {
+                        node.dom[def.prop] = def.valueExt1;
+                        expect(node.dom[def.prop]).to.be(def.valueExt1);
                     }
                     cito.vdom.update(node, _.cloneDeep(def.node2));
                     expect(node.dom[def.prop]).to.be(def.value2);
