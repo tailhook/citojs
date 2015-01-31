@@ -272,27 +272,7 @@ var cito = window.cito || {};
                         domElement[attrName] = attrValue;
                     }
                 } else if (!oldAttrs || oldAttrs[attrName] !== attrValue) {
-                    if (attrValue === false) {
-                        domElement.removeAttribute(attrName);
-                    } else {
-                        if (attrValue === true) {
-                            attrValue = '';
-                        }
-                        var colonIndex = attrName.indexOf(':'), ns;
-                        if (colonIndex !== -1) {
-                            var prefix = attrName.substr(0, colonIndex);
-                            switch (prefix) {
-                                case 'xlink':
-                                    ns = 'http://www.w3.org/1999/xlink';
-                                    break;
-                            }
-                        }
-                        if (ns) {
-                            domElement.setAttributeNS(ns, attrName, attrValue);
-                        } else {
-                            domElement.setAttribute(attrName, attrValue);
-                        }
-                    }
+                    updateAttribute(domElement, attrName, attrValue);
                 }
             }
         }
@@ -323,6 +303,30 @@ var cito = window.cito || {};
                 if (!events || !events[eventType]) {
                     removeEventHandler(domElement, eventType);
                 }
+            }
+        }
+    }
+
+    function updateAttribute(domElement, name, value) {
+        if (value === false) {
+            domElement.removeAttribute(name);
+        } else {
+            if (value === true) {
+                value = '';
+            }
+            var colonIndex = name.indexOf(':'), ns;
+            if (colonIndex !== -1) {
+                var prefix = name.substr(0, colonIndex);
+                switch (prefix) {
+                    case 'xlink':
+                        ns = 'http://www.w3.org/1999/xlink';
+                        break;
+                }
+            }
+            if (ns) {
+                domElement.setAttributeNS(ns, name, value);
+            } else {
+                domElement.setAttribute(name, value);
             }
         }
     }
