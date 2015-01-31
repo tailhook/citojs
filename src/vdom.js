@@ -11,10 +11,12 @@ var cito = window.cito || {};
     'use strict';
 
     var document = window.document,
+        navigator = window.navigator,
         noop = function () {},
         console = window.console || {warn: noop, error: noop};
 
-    var helperDiv = document.createElement('div'),
+    var isTrident = navigator.userAgent.indexOf('Trident') !== -1,
+        helperDiv = document.createElement('div'),
         supportsTextContent = 'textContent' in document,
         supportsEventListener = 'addEventListener' in document,
         supportsRange = 'createRange' in document,
@@ -214,9 +216,12 @@ var cito = window.cito || {};
                     }
                     node.dom = domNode;
                     children = normChildren(node, children);
+                    if (isTrident && domParent) {
+                        insertChild(domParent, domNode, nextChild, replace);
+                    }
                     createChildren(domNode, node, ns, children, 0, children.length, children.length > 1);
                     updateElement(domNode, null, null, node, tag, node.attrs, node.events);
-                    if (domParent) {
+                    if (!isTrident && domParent) {
                         insertChild(domParent, domNode, nextChild, replace);
                     }
                     return;
