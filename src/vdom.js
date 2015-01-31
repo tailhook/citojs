@@ -213,9 +213,9 @@ var cito = window.cito || {};
                         domNode = document.createElement(tag);
                     }
                     node.dom = domNode;
-                    updateElement(domNode, null, null, node, tag, node.attrs, node.events);
                     children = normChildren(node, children);
                     createChildren(domNode, node, ns, children, 0, children.length, children.length > 1);
+                    updateElement(domNode, null, null, node, tag, node.attrs, node.events);
                     if (domParent) {
                         insertChild(domParent, domNode, nextChild, replace);
                     }
@@ -733,8 +733,8 @@ var cito = window.cito || {};
                     var ns = oldNode.ns;
                     if (ns) node.ns = ns;
                     node.dom = domNode;
-                    updateElement(domNode, oldNode.attrs, oldNode.events, node, tag, node.attrs, node.events);
                     updateChildren(domNode, node, ns, oldChildren, children, false);
+                    updateElement(domNode, oldNode.attrs, oldNode.events, node, tag, node.attrs, node.events);
                     break;
             }
         }

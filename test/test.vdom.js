@@ -1340,20 +1340,39 @@ describe('cito.vdom', function () {
             node2: {tag: 'input', attrs: {type: 'radio', checked: false}},
             prop: 'checked',
             value1: true, value2: false
+        }
+    ];
+
+    var selectDefs = [
+        {
+            name: 'option 1 selected',
+            node: {tag: 'select', children: [{tag: 'option', attrs: {value: 'opt1', selected: true}}, {tag: 'option', attrs: {value: 'opt2'}}]},
+            props: {selectedIndex: 0, value: 'opt1'}
         },
         {
-            name: 'select change selected',
-            node1: {tag: 'select', children: [{tag: 'option', attrs: {selected: true}, children: 'opt1'}, {tag: 'option', children: 'opt1'}]},
-            node2: {tag: 'select', children: [{tag: 'option', children: 'opt1'}, {tag: 'option', attrs: {selected: true}, children: 'opt2'}]},
-            prop: 'selectedIndex',
-            value1: 0, value2: 1
+            name: 'option 2 selected',
+            node: {tag: 'select', children: [{tag: 'option', attrs: {value: 'opt1'}}, {tag: 'option', attrs: {value: 'opt2', selected: true}}]},
+            props: {selectedIndex: 1, value: 'opt2'}
         },
         {
-            name: 'select change selectedIndex',
-            node1: {tag: 'select', attrs: {selectedIndex: 0}, children: [{tag: 'option', children: 'opt1'}, {tag: 'option', children: 'opt1'}]},
-            node2: {tag: 'select', attrs: {selectedIndex: 1}, children: [{tag: 'option', children: 'opt1'}, {tag: 'option', children: 'opt2'}]},
-            prop: 'selectedIndex',
-            value1: 0, value2: 1
+            name: 'selectedIndex 0',
+            node: {tag: 'select', children: [{tag: 'option', attrs: {value: 'opt1', selected: true}}, {tag: 'option', attrs: {value: 'opt2'}}]},
+            props: {selectedIndex: 0, value: 'opt1'}
+        },
+        {
+            name: 'selectedIndex 1',
+            node: {tag: 'select', children: [{tag: 'option', attrs: {value: 'opt1'}}, {tag: 'option', attrs: {value: 'opt2', selected: true}}]},
+            props: {selectedIndex: 1, value: 'opt2'}
+        },
+        {
+            name: 'value opt1',
+            node: {tag: 'select', children: [{tag: 'option', attrs: {value: 'opt1', selected: true}}, {tag: 'option', attrs: {value: 'opt2'}}]},
+            props: {selectedIndex: 0, value: 'opt1'}
+        },
+        {
+            name: 'value opt2',
+            node: {tag: 'select', children: [{tag: 'option', attrs: {value: 'opt1'}}, {tag: 'option', attrs: {value: 'opt2', selected: true}}]},
+            props: {selectedIndex: 1, value: 'opt2'}
         }
     ];
 
@@ -1443,6 +1462,22 @@ describe('cito.vdom', function () {
                     }
                     cito.vdom.update(node, _.cloneDeep(def.node2));
                     expect(node.dom[def.prop]).to.be(def.value2);
+                });
+            });
+        });
+
+        describe('select properties', function () {
+            forEachCombination(selectDefs, function (def1, def2) {
+                it(def1.name + ' -> ' + def2.name, function () {
+                    var node = cito.vdom.create(_.cloneDeep(def1.node)),
+                        prop;
+                    for (prop in def1.props) {
+                        expect(node.dom[prop]).to.be(def1.props[prop]);
+                    }
+                    cito.vdom.update(node, _.cloneDeep(def2.node));
+                    for (prop in def2.props) {
+                        expect(node.dom[prop]).to.be(def2.props[prop]);
+                    }
                 });
             });
         });
