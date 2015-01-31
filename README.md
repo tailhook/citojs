@@ -161,7 +161,7 @@ Element attributes can be set with the `attrs` property. The attribute name is a
 
 ###### Inline Style
 
-To style an element, you can either use a string or an object. The object will update only changed properties while the string will simply overwrite the style attribute. The style property name is in both cases the same name as you would use for inline styles.
+To style an element, you can either use a CSS string or an object with CSS properties. The object will update only changed properties while the string will simply overwrite the style attribute. The style property name is in both cases the same name as you would use for inline styles.
 
 ```javascript
 // Element with style string
@@ -169,6 +169,37 @@ To style an element, you can either use a string or an object. The object will u
 
 // Element with style object
 {tag: 'input', attrs: {style: 'border-bottom': '1px solid black', color: 'gray'}}
+```
+
+###### Input Elements
+
+While most attributes update DOM element attributes, the attributes `value`, `checked`, `selected` and `selectedIndex` are compared with and update DOM element properties instead. This is because these properties can be influenced by the user directly through browser input fields. If they were only compared with the previous attribute values, the current attribute values would not be enforced.
+
+Moreover, there are a few other noteworthy exceptions:
+
+The content of `textarea` elements must be provided with the `value` attribute instead of the `children` property:
+
+```javascript
+{tag: 'textarea', attrs: {value: 'Text ...'}}
+```
+
+To define the current option of a `select` element you can either set the `value` or `selectedIndex` attribute or set the `selected` attribute of an `option` directly:
+
+```javascript
+// Select option by setting the value
+{tag: 'select', attrs: {value: 'val1'}, children: [
+    {tag: 'option', attrs: {value: 'val1'}, ...}
+]}
+
+// Select option by setting the selectedIndex
+{tag: 'select', attrs: {selectedIndex: 0}, children: [
+    {tag: 'option', attrs: {value: 'val1'}, ...}
+]}
+
+// Select option by setting selected on the option
+{tag: 'select', attrs: children: [
+    {tag: 'option', attrs: {selected: true}, ...}
+]}
 ```
 
 ##### Text Node
