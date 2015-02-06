@@ -122,9 +122,23 @@ describe('cito.vdom', function () {
                 html: '<div></div>'
             },
             {
+                name: 'text empty array',
+                node: {
+                    tag: 'div', children: ['']
+                },
+                html: '<div></div>'
+            },
+            {
                 name: 'text object empty',
                 node: {
                     tag: 'div', children: {tag: '#', children: ''}
+                },
+                html: '<div></div>'
+            },
+            {
+                name: 'text object empty array',
+                node: {
+                    tag: 'div', children: [{tag: '#', children: ''}]
                 },
                 html: '<div></div>'
             },
@@ -188,6 +202,13 @@ describe('cito.vdom', function () {
                 name: 'html empty',
                 node: {
                     tag: 'div', children: {tag: '<', children: ''}
+                },
+                html: '<div></div>'
+            },
+            {
+                name: 'html empty array',
+                node: {
+                    tag: 'div', children: [{tag: '<', children: ''}]
                 },
                 html: '<div></div>'
             },

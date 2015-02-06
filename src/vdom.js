@@ -72,7 +72,7 @@ var cito = window.cito || {};
     }
 
     function normChildren(node, children, oldChildren) {
-        var origChildren = children, tag;
+        var origChildren = children;
         if (children) {
             // TODO move promise support into utility function
             if (isPromise(children)) {
@@ -95,11 +95,28 @@ var cito = window.cito || {};
                 }
             }
         }
+
         // TODO convert to array only after only child optimization
-        if (!isArray(children)) {
-            // Empty text and html nodes must be ignored
-            children = (children && (children.children || ((tag = children.tag) !== '#' && tag !== '<'))) ? [children] : [];
+        var childrenIsArray = isArray(children),
+            hasOnlyChild, onlyChild;
+        if (!childrenIsArray) {
+            hasOnlyChild = true;
+            onlyChild = children;
+        } else if (children.length === 1) {
+            hasOnlyChild = true;
+            onlyChild = children[0];
+        } else {
+            hasOnlyChild = false;
         }
+        if (hasOnlyChild) {
+            // Ignore falsy and empty text/html nodes because no node would be created for them
+            if (!onlyChild || (!onlyChild.children && (onlyChild.tag === '#' || onlyChild.tag === '<'))) {
+                children = [];
+            } else if (!childrenIsArray) {
+                children = [onlyChild];
+            }
+        }
+
         if (origChildren !== children) {
             node.children = children;
         }
