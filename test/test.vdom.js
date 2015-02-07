@@ -213,6 +213,16 @@ describe('cito.vdom', function () {
                 html: '<div></div>'
             },
             {
+                name: 'two html empty',
+                node: {
+                    tag: 'div', children: [
+                        {tag: '<', children: ''},
+                        {tag: '<', children: ''}
+                    ]
+                },
+                html: '<div></div>'
+            },
+            {
                 name: 'html b',
                 node: {
                     tag: 'div', children: {tag: '<', children: '<b>t0</b>'}
@@ -265,6 +275,46 @@ describe('cito.vdom', function () {
                     ]
                 },
                 html: '<div><b>t0</b><b>t1</b></div>'
+            },
+            {
+                name: 'text + html text',
+                node: {
+                    tag: 'div', children: [
+                        't0',
+                        {tag: '<', children: 'ht1'}
+                    ]
+                },
+                html: '<div>t0ht1</div>'
+            },
+            {
+                name: 'text + b',
+                node: {
+                    tag: 'div', children: [
+                        't0',
+                        {tag: '<', children: '<b>t1</b>'}
+                    ]
+                },
+                html: '<div>t0<b>t1</b></div>'
+            },
+            {
+                name: 'text + (html text + b)',
+                node: {
+                    tag: 'div', children: [
+                        't0',
+                        {tag: '<', children: 'ht1<b>t2</b>'}
+                    ]
+                },
+                html: '<div>t0ht1<b>t2</b></div>'
+            },
+            {
+                name: 'html + (html b + text)',
+                node: {
+                    tag: 'div', children: [
+                        't0',
+                        {tag: '<', children: '<b>t1</b>ht2'}
+                    ]
+                },
+                html: '<div>t0<b>t1</b>ht2</div>'
             }
         ],
         'lists': [

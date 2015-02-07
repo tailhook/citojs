@@ -142,7 +142,21 @@ var cito = window.cito || {};
 
     function insertAdjacentHTML(node, position, htmlContent) {
         if (node.insertAdjacentHTML) {
+            var prevTextNode,
+                prevTextNodeLength;
+            if (htmlContent[0] !== '<') {
+                var prevNode = (position === 'beforebegin') ? node.previousSibling
+                    : (position === 'beforeend') ? node.lastChild : null;
+                if (prevNode && prevNode.nodeType === 3) {
+                    prevTextNode = prevNode;
+                    prevTextNodeLength = prevNode.length;
+                }
+            }
             node.insertAdjacentHTML(position, htmlContent);
+            // Split previous text node if it was updated instead of a new one inserted (IE/FF)
+            if (prevTextNode && prevTextNode.length !== prevTextNodeLength) {
+                prevTextNode.splitText(prevTextNodeLength);
+            }
         } else {
             var child;
             helperDiv.innerHTML = htmlContent;
