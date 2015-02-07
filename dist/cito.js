@@ -300,12 +300,8 @@ var cito = window.cito || {};
         }
         if (oldAttrs) {
             for (attrName in oldAttrs) {
-                if (!attrs || attrs[attrName] === undefined) {
-                    if (isInputProperty(tag, attrName)) {
-                        domElement[attrName] = '';
-                    } else {
-                        domElement.removeAttribute(attrName);
-                    }
+                if ((!attrs || attrs[attrName] === undefined) && !isInputProperty(tag, attrName)) {
+                    domElement.removeAttribute(attrName);
                 }
             }
         }

@@ -1377,22 +1377,22 @@ describe('cito.vdom', function () {
         },
         {
             name: 'selectedIndex 0',
-            node: {tag: 'select', children: [{tag: 'option', attrs: {value: 'opt1', selected: true}}, {tag: 'option', attrs: {value: 'opt2'}}]},
+            node: {tag: 'select', attrs: {selectedIndex: 0}, children: [{tag: 'option', attrs: {value: 'opt1'}}, {tag: 'option', attrs: {value: 'opt2'}}]},
             props: {selectedIndex: 0, value: 'opt1'}
         },
         {
             name: 'selectedIndex 1',
-            node: {tag: 'select', children: [{tag: 'option', attrs: {value: 'opt1'}}, {tag: 'option', attrs: {value: 'opt2', selected: true}}]},
+            node: {tag: 'select', attrs: {selectedIndex: 1}, children: [{tag: 'option', attrs: {value: 'opt1'}}, {tag: 'option', attrs: {value: 'opt2'}}]},
             props: {selectedIndex: 1, value: 'opt2'}
         },
         {
             name: 'value opt1',
-            node: {tag: 'select', children: [{tag: 'option', attrs: {value: 'opt1', selected: true}}, {tag: 'option', attrs: {value: 'opt2'}}]},
+            node: {tag: 'select', attrs: {value: 'opt1'}, children: [{tag: 'option', attrs: {value: 'opt1'}}, {tag: 'option', attrs: {value: 'opt2'}}]},
             props: {selectedIndex: 0, value: 'opt1'}
         },
         {
             name: 'value opt2',
-            node: {tag: 'select', children: [{tag: 'option', attrs: {value: 'opt1'}}, {tag: 'option', attrs: {value: 'opt2', selected: true}}]},
+            node: {tag: 'select', attrs: {value: 'opt2'}, children: [{tag: 'option', attrs: {value: 'opt1'}}, {tag: 'option', attrs: {value: 'opt2'}}]},
             props: {selectedIndex: 1, value: 'opt2'}
         }
     ];
@@ -1487,7 +1487,7 @@ describe('cito.vdom', function () {
             });
         });
 
-        describe('select properties', function () {
+        describe('select element', function () {
             forEachCombination(selectDefs, function (def1, def2) {
                 it(def1.name + ' -> ' + def2.name, function () {
                     var node = cito.vdom.create(_.cloneDeep(def1.node)),
