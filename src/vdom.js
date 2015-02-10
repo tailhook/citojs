@@ -15,8 +15,12 @@ var cito = window.cito || {};
         noop = function () {},
         console = window.console || {warn: noop, error: noop};
 
-    var isTrident = navigator.userAgent.indexOf('Trident') !== -1,
-        helperDiv = document.createElement('div'),
+    var userAgent = navigator.userAgent,
+        isWebKit = userAgent.indexOf('WebKit') !== -1,
+        isFirefox = userAgent.indexOf('Chrome') !== -1,
+        isTrident = userAgent.indexOf('Trident') !== -1;
+
+    var helperDiv = document.createElement('div'),
         supportsTextContent = 'textContent' in document,
         supportsEventListener = 'addEventListener' in document,
         supportsRange = 'createRange' in document,
@@ -140,22 +144,44 @@ var cito = window.cito || {};
         }
     }
 
+    var iah_el = document.createElement('p'), iah_normalizes, iah_ignoresEmptyText;
+    if (iah_el.insertAdjacentHTML) {
+        iah_el.appendChild(document.createTextNode('a'));
+        iah_el.insertAdjacentHTML('beforeend', 'b');
+        iah_normalizes = (iah_el.childNodes.length === 1);
+
+        iah_el = document.createElement('p');
+        iah_el.appendChild(document.createTextNode(''));
+        iah_el.insertAdjacentHTML('beforeend', '<b>');
+        iah_ignoresEmptyText = (iah_el.firstChild.nodeType !== 3);
+    }
+
     function insertAdjacentHTML(node, position, htmlContent) {
         if (node.insertAdjacentHTML) {
-            var prevTextNode,
-                prevTextNodeLength;
-            if (htmlContent[0] !== '<') {
+            var prevText, prevTextLength, prevTextEmpty;
+            if (iah_normalizes || iah_ignoresEmptyText) {
                 var prevNode = (position === 'beforebegin') ? node.previousSibling
                     : (position === 'beforeend') ? node.lastChild : null;
                 if (prevNode && prevNode.nodeType === 3) {
-                    prevTextNode = prevNode;
-                    prevTextNodeLength = prevNode.length;
+                    prevText = prevNode;
+                    if (iah_ignoresEmptyText && prevNode.length === 0) {
+                        prevTextEmpty = true;
+                        prevNode.nodeValue = ' ';
+                    }
+                    if (iah_normalizes) {
+                        prevTextLength = prevNode.length;
+                    }
                 }
             }
             node.insertAdjacentHTML(position, htmlContent);
-            // Split previous text node if it was updated instead of a new one inserted (IE/FF)
-            if (prevTextNode && prevTextNode.length !== prevTextNodeLength) {
-                prevTextNode.splitText(prevTextNodeLength);
+            if (prevText) {
+                // Split previous text node if it was updated instead of a new one inserted (IE/FF)
+                if (iah_normalizes && prevText.length !== prevTextLength) {
+                    prevText.splitText(prevTextLength);
+                }
+                if (iah_ignoresEmptyText && prevTextEmpty) {
+                    prevText.nodeValue = '';
+                }
             }
         } else {
             var child;
@@ -169,8 +195,6 @@ var cito = window.cito || {};
                 while (child = helperDiv.firstChild) { // jshint ignore:line
                     node.appendChild(child);
                 }
-            } else {
-                throw new Error('Unsupported: ' + position);
             }
         }
     }
@@ -196,6 +220,11 @@ var cito = window.cito || {};
     }
 
     function createNode(node, domParent, parentNs, hasDomSiblings, nextChild, replace) {
+        // TODO evaluate when else to use
+        if (isTrident) {
+            return insertNodeHTML(node, domParent, nextChild, replace);
+        }
+
         var domNode, tag = node.tag, children = node.children;
         if (!tag) {
             createFragment(node, children, domParent, parentNs, hasDomSiblings, nextChild, replace);
@@ -264,6 +293,243 @@ var cito = window.cito || {};
         }
     }
 
+    // TODO do not use in loop
+    function insertNodeHTML(node, domParent, nextChild, replace) {
+        var html = createNodeHTML(node), domNode;
+        if (domParent) {
+            var prevNode;
+            if (!nextChild && !domParent.hasChildNodes()) {
+                domParent.innerHTML = html;
+                domNode = domParent.firstChild;
+            } else {
+                if (nextChild) {
+                    prevNode = nextChild.dom.previousSibling;
+                    insertAdjacentHTML(nextChild.dom, 'beforebegin', html);
+                    if (replace) {
+                        // TODO use outerHTML if possible
+                        removeChild(domParent, nextChild);
+                    }
+                } else {
+                    prevNode = domParent.lastChild;
+                    insertAdjacentHTML(domParent, 'beforeend', html);
+                }
+                domNode = prevNode ? prevNode.nextSibling : domParent.firstChild;
+            }
+        } else {
+            // TODO better parsing
+            helperDiv.innerHTML = html;
+            domNode = helperDiv.removeChild(helperDiv.firstChild);
+        }
+        if (node.tag) {
+            postCreateNodeHTML(domNode, node, 0);
+        } else {
+            var domTestNode = domParent.firstChild, domIndex = 0;
+            while (domTestNode !== domNode) {
+                domTestNode = domTestNode.nextSibling;
+                domIndex++;
+            }
+            postCreateFragmentHTML(domParent, node, domIndex);
+        }
+    }
+
+    var endOfText = '\u0003';
+
+    // TODO fix namespace issue in FF
+    // TODO omit all unnecessary endOfText
+    function createNodeHTML(node, context) {
+        var tag = node.tag, children = node.children;
+        switch (tag) {
+            case '#':
+                return escapeContent(children) + endOfText;
+            case '!':
+                return '<!--' + escapeComment(children) + '-->';
+            case '<':
+                return children + endOfText;
+            default:
+                var html;
+                if (tag) {
+                    var attrs = node.attrs;
+                    if (tag === 'select' && attrs) {
+                        context = {selectedIndex: attrs.selectedIndex, value: attrs.value, optionIndex: 0};
+                    } else if (tag === 'option' && context) {
+                        if ((context.value && context.value === attrs.value) ||
+                            (context.selectedIndex !== undefined && context.selectedIndex === context.optionIndex)) {
+                            attrs.selected = true;
+                        }
+                        context.optionIndex++;
+                    }
+                    // TODO validate tag name
+                    html = '<' + tag;
+                    if (attrs) {
+                        html += ' ';
+                        for (var attrName in attrs) {
+                            var attrValue = attrs[attrName];
+                            if (attrValue === false ||
+                                (tag === 'select' && (attrName === 'value' || attrName === 'selectedIndex'))) {
+                                continue;
+                            } else if (tag === 'textarea' && attrName === 'value') {
+                                children = attrValue;
+                                continue;
+                            } else if (attrValue === true) {
+                                attrValue = '';
+                            } else if (attrName === 'style' && !isString(attrValue)) {
+                                var style = '';
+                                for (var propName in attrValue) {
+                                    style += propName + ': ' + attrValue[propName] + '; ';
+                                }
+                                attrValue = style;
+                            }
+                            html += ' ' + escapedAttr(attrName, attrValue);
+                        }
+                    }
+                } else {
+                    html = '';
+                }
+
+                children = normChildren(node, children);
+                var childrenLength = children.length;
+                if (tag) {
+                    html += '>';
+                }
+                if (childrenLength === 1 && isString(children[0])) {
+                    html += escapeContent(children[0]);
+                    if (!tag) {
+                        html += endOfText;
+                    }
+                } else if (childrenLength === 0 && !tag) {
+                    html += endOfText;
+                } else {
+                    for (var i = 0; i < childrenLength; i++) {
+                        html += createNodeHTML(normIndex(children, i), context);
+                    }
+                }
+                if (tag) {
+                    // TODO close only required tags explicitly
+                    html += '</' + tag + '>';
+                }
+                return html;
+        }
+    }
+
+    // TODO avoid using childNodes if possible
+    // TODO merge both post together
+    function postCreateNodeHTML(domNode, node, domIndex) {
+        node.dom = domNode;
+        var text, endIndex;
+        switch (node.tag) {
+            case '#':
+                text = domNode.nodeValue;
+                endIndex = text.indexOf(endOfText);
+                if (endIndex !== -1) {
+                    if (endIndex + 1 < text.length) {
+                        domNode.splitText(endIndex + 1);
+                    }
+                    domNode.nodeValue = text.substr(0, endIndex);
+                }
+                break;
+            case '!': break;
+            case '<':
+                var domLength = 0;
+                for (; domNode; domNode = domNode.nextSibling) {
+                    domLength++;
+                    if (domNode.nodeType === 3) {
+                        text = domNode.nodeValue;
+                        if (domLength > 1 && text === endOfText) {
+                            domNode.parentNode.removeChild(domNode);
+                            domLength--;
+                        } else {
+                            endIndex = text.indexOf(endOfText);
+                            if (endIndex !== -1) {
+                                if (endIndex + 1 < text.length) {
+                                    domNode.splitText(endIndex + 1);
+                                }
+                                domNode.nodeValue = text.substr(0, endIndex);
+                                break;
+                            }
+                        }
+                    }
+                }
+                node.domLength = domLength;
+                return domIndex + domLength;
+            default:
+                var children = node.children,
+                    childrenLength = children.length;
+                if (childrenLength !== 1 || !isString(children[0])) {
+                    var domChildren = domNode.childNodes;
+                    for (var i = 0, childDomIndex = 0; i < childrenLength; i++) {
+                        var child = children[i];
+                        childDomIndex = child.tag ? postCreateNodeHTML(domChildren[childDomIndex], child, childDomIndex)
+                            : postCreateFragmentHTML(domNode, child, childDomIndex);
+                    }
+                }
+                var events = node.events;
+                if (events) {
+                    createEventHandlers(domNode, node, events);
+                }
+                break;
+        }
+        return domIndex + 1;
+    }
+
+    function postCreateFragmentHTML(domParent, node, domIndex) {
+        var children = node.children,
+            domChildren = domParent.childNodes;
+        if (children.length === 0) {
+            var domNode = domChildren[domIndex];
+            if (domNode.length > 1) {
+                domNode.splitText(1);
+            }
+            domNode.nodeValue = '';
+            node.dom = domNode;
+            domIndex++;
+        } else {
+            if (children.length === 1) {
+                normIndex(children, 0);
+            }
+            var startDomIndex = domIndex;
+            for (var i = 0; i < children.length; i++) {
+                var child = children[i];
+                domIndex = child.tag ? postCreateNodeHTML(domChildren[domIndex], child, domIndex)
+                    : postCreateFragmentHTML(domParent, child, domIndex);
+            }
+            node.dom = children[0].dom;
+            node.domLength = domIndex - startDomIndex;
+        }
+        return domIndex;
+    }
+
+    function escapeContent(value) {
+        value = '' + value;
+        if (isWebKit) {
+            helperDiv.innerText = value;
+            value = helperDiv.innerHTML;
+        } else if (isFirefox) {
+            value = value.split('<').join('&lt;').split('>').join('&gt;').split('&').join('&amp;');
+        } else {
+            value = value.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/&/g, '&amp;');
+        }
+        return value;
+    }
+
+    function escapeComment(value) {
+        value = '' + value;
+        // TODO print warning if value contains --
+        return value.replace(/-{2,}/g, '-');
+    }
+
+    function escapedAttr(name, value) {
+        var type = typeof value;
+        value = '' + value;
+        if (type !== 'number') {
+            if (isFirefox) {
+                value = value.split('"').join('&quot;').split('&').join('&amp;');
+            } else {
+                value = value.replace(/"/g, '&quot;').replace(/&/g, '&amp;');
+            }
+        }
+        return name + '="' + value + '"';
+    }
+
     function createFragment(node, children, domParent, parentNs, hasDomSiblings, nextChild, replace) {
         children = normChildren(node, children);
         var domNode, domLength,
@@ -303,6 +569,8 @@ var cito = window.cito || {};
                     if (oldAttrValue !== attrValue) {
                         updateStyle(domElement, oldAttrValue, attrs, attrValue);
                     }
+                } else if (attrName === 'class') {
+                    domElement.className = attrValue;
                 } else if (isInputProperty(tag, attrName)) {
                     if (domElement[attrName] !== attrValue) {
                         domElement[attrName] = attrValue;
@@ -314,24 +582,22 @@ var cito = window.cito || {};
         }
         if (oldAttrs) {
             for (attrName in oldAttrs) {
-                if ((!attrs || attrs[attrName] === undefined) && !isInputProperty(tag, attrName)) {
-                    domElement.removeAttribute(attrName);
+                if ((!attrs || attrs[attrName] === undefined)) {
+                    if (attrName === 'class') {
+                        domElement.className = '';
+                    } else if (!isInputProperty(tag, attrName)) {
+                        domElement.removeAttribute(attrName);
+                    }
                 }
             }
         }
 
         // Events
-        var eventType;
         if (events) {
-            domElement.virtualNode = element;
-            for (eventType in events) {
-                if (!oldEvents || !oldEvents[eventType]) {
-                    addEventHandler(domElement, eventType);
-                }
-            }
+            createEventHandlers(domElement, element, events, oldEvents);
         }
         if (oldEvents) {
-            for (eventType in oldEvents) {
+            for (var eventType in oldEvents) {
                 if (!events || !events[eventType]) {
                     removeEventHandler(domElement, eventType);
                 }
@@ -407,6 +673,15 @@ var cito = window.cito || {};
                         domStyle.removeProperty(propName);
                     }
                 }
+            }
+        }
+    }
+
+    function createEventHandlers(domElement, element, events, oldEvents) {
+        domElement.virtualNode = element;
+        for (var eventType in events) {
+            if (!oldEvents || !oldEvents[eventType]) {
+                addEventHandler(domElement, eventType);
             }
         }
     }
@@ -861,9 +1136,9 @@ var cito = window.cito || {};
             createNode(node);
             return node;
         },
-        append: function (domParent, node) {
-            node = vdom.create(node);
-            domParent.appendChild(node.dom);
+        append: function (domParent, node) { // TODO params order
+            node = norm(node);
+            createNode(node, domParent);
             return node;
         },
         update: function (oldNode, node) {

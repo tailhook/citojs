@@ -42,6 +42,21 @@ describe('cito.vdom', function () {
                 name: 'id and class',
                 node: {tag: 'div', attrs: {id: 'id1', 'class': 'class1'}},
                 html: '<div id="id1" class="class1"></div>'
+            },
+            {
+                name: 'id and class',
+                node: {tag: 'div', attrs: {id: 'id1', 'class': 'class1'}},
+                html: '<div id="id1" class="class1"></div>'
+            },
+            {
+                name: 'title',
+                node: {tag: 'div', attrs: {title: 'title1'}},
+                html: '<div title="title1"></div>'
+            },
+            {
+                name: 'data-attr',
+                node: {tag: 'div', attrs: {'data-attr': 'attr1'}},
+                html: '<div data-attr="attr1"></div>'
             }
         ],
         'attrs input': [
@@ -101,16 +116,6 @@ describe('cito.vdom', function () {
                     ]
                 },
                 html: '<div><ul><li>t1</li><li>t2</li></ul><ul><li>t0</li></ul></div>'
-            },
-            {
-                name: 'comment 1',
-                node: {tag: 'div', children: {tag: '!', children: 'comment 1'}},
-                html: '<div><!--comment 1--></div>'
-            },
-            {
-                name: 'comment 2',
-                node: {tag: 'div', children: {tag: '!', children: 'comment 2'}},
-                html: '<div><!--comment 2--></div>'
             }
         ],
         'text': [
@@ -125,6 +130,13 @@ describe('cito.vdom', function () {
                 name: 'text empty array',
                 node: {
                     tag: 'div', children: ['']
+                },
+                html: '<div></div>'
+            },
+            {
+                name: 'two texts empty',
+                node: {
+                    tag: 'div', children: ['', '']
                 },
                 html: '<div></div>'
             },
@@ -195,6 +207,32 @@ describe('cito.vdom', function () {
                     ]
                 },
                 html: '<div>t0<b>t1</b></div>'
+            },
+            {
+                name: 'text 0 + text 1',
+                node: {
+                    tag: 'div', children: ['t0', 't1']
+                },
+                html: '<div>t0t1</div>'
+            },
+            {
+                name: 'text 1 + text 0',
+                node: {
+                    tag: 'div', children: ['t1', 't0']
+                },
+                html: '<div>t1t0</div>'
+            }
+        ],
+        'comments': [
+            {
+                name: 'comment 1',
+                node: {tag: 'div', children: {tag: '!', children: 'comment 1'}},
+                html: '<div><!--comment 1--></div>'
+            },
+            {
+                name: 'comment 2',
+                node: {tag: 'div', children: {tag: '!', children: 'comment 2'}},
+                html: '<div><!--comment 2--></div>'
             }
         ],
         'html': [
@@ -641,6 +679,11 @@ describe('cito.vdom', function () {
             {
                 name: 'fragment without children',
                 node: {tag: 'div', children: {}},
+                html: '<div></div>'
+            },
+            {
+                name: 'two fragments without children',
+                node: {tag: 'div', children: [{}, {}]},
                 html: '<div></div>'
             },
             {
@@ -1927,7 +1970,7 @@ describe('cito.vdom', function () {
     function normHtml(html) {
         html = html.toLowerCase();
         html = html.replace(/xmlns(:\w+)?=".*?"/g, '');
-        html = html.replace(/style=""/g, '');
+        html = html.replace(/(style|class)=""/g, '');
         html = html.replace(/=""/g, '');
         html = html.replace(/(<([\w-]+)[^/>]*)\/>/g, '$1></$2>');
         html = html.replace(/(<[\w-]+)(.*?)(>)/g, function (match, start, attrsStr, end) {
