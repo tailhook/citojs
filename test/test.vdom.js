@@ -1833,6 +1833,59 @@ describe('cito.vdom', function () {
         });
     });
 
+    // TODO test this, multiple listeners, return false
+    describe('lifecycle events', function () {
+        it('$created', function () {
+            var caughtEvent;
+            var node = cito.vdom.create({
+                tag: 'div', events: {
+                    $created: function (event) {
+                        caughtEvent = event;
+                    }
+                }
+            });
+            expect(caughtEvent).to.have.property('type', '$created');
+            expect(caughtEvent).to.have.property('target', node.dom);
+            expect(caughtEvent.virtualNode).to.eql(node);
+        });
+
+        it('$changed', function () {
+            var caughtEvent;
+            var changedHandler = function (event) {
+                caughtEvent = event;
+            };
+            var node = cito.vdom.create({tag: 'div', events: {$changed: changedHandler}});
+            expect(caughtEvent).to.be(undefined);
+
+            cito.vdom.update(node, {tag: 'div', attrs: {id: 'id1'}, events: {$changed: changedHandler}});
+
+            expect(caughtEvent).to.have.property('type', '$changed');
+            expect(caughtEvent).to.have.property('target', node.dom);
+            expect(caughtEvent.virtualNode).to.eql(node);
+            expect(caughtEvent.changes).to.eql(['id']);
+        });
+
+        it('$destroyed', function () {
+            var caughtEvent;
+            var domParent = document.createElement('div');
+
+            var node = cito.vdom.append(domParent, {
+                tag: 'div', events: {
+                    $destroyed: function (event) {
+                        caughtEvent = event;
+                    }
+                }
+            });
+
+            expect(caughtEvent).to.be(undefined);
+            cito.vdom.remove(node);
+
+            expect(caughtEvent).to.have.property('type', '$destroyed');
+            expect(caughtEvent).to.have.property('target', node.dom);
+            expect(caughtEvent).to.have.property('virtualNode', node);
+        });
+    });
+
     function forEachCombination(defs, callback) {
         _.forEach(defs, function (def1) {
             _.forEach(defs, function (def2) {

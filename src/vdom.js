@@ -270,15 +270,35 @@ var cito = window.cito || {};
                 if (events) {
                     updateEvents(domNode, node, events);
                 }
-
                 if (!isTrident && domParent) {
                     insertChild(domParent, domNode, nextChild, replace);
+                }
+
+                var createdHandlers = events && events.$created;
+                if (createdHandlers) {
+                    triggerLight(createdHandlers, '$created', domNode, node);
                 }
                 return;
         }
         node.dom = domNode;
         if (domParent) {
             insertChild(domParent, domNode, nextChild, replace);
+        }
+    }
+
+    function triggerLight(handlers, type, domNode, node, extraProp, extraPropValue) {
+        var event = {type: type, target: domNode, virtualNode: node};
+        if (extraProp) {
+            event[extraProp] = extraPropValue;
+        }
+        if (isArray(handlers)) {
+            for (var i = 0; i < handlers.length; i++) {
+                if (handlers[i].call(domNode, event) === false) {
+                    return;
+                }
+            }
+        } else {
+            handlers.call(domNode, event);
         }
     }
 
@@ -455,9 +475,15 @@ var cito = window.cito || {};
                             domNode.firstChild.data = '';
                         }
                     }
+
                     var events = node.events;
                     if (events) {
                         updateEvents(domNode, node, events);
+
+                        var createdHandlers = events.$created;
+                        if (createdHandlers) {
+                            triggerLight(createdHandlers, '$created', domNode, node);
+                        }
                     }
                     break;
             }
@@ -566,24 +592,32 @@ var cito = window.cito || {};
         node.domLength = domLength;
     }
 
-    function updateAttributes(domElement, tag, attrs, oldAttrs) {
-        var attrName;
+    function updateAttributes(domElement, tag, attrs, oldAttrs, recordChanges) {
+        var changes, attrName;
         if (attrs) {
             for (attrName in attrs) {
-                var attrValue = attrs[attrName];
+                var changed = false,
+                    attrValue = attrs[attrName];
                 if (attrName === 'style') {
                     var oldAttrValue = oldAttrs && oldAttrs[attrName];
                     if (oldAttrValue !== attrValue) {
-                        updateStyle(domElement, oldAttrValue, attrs, attrValue);
+                        changed = updateStyle(domElement, oldAttrValue, attrs, attrValue);
                     }
-                } else if (attrName === 'class') {
-                    domElement.className = attrValue;
                 } else if (isInputProperty(tag, attrName)) {
                     if (domElement[attrName] !== attrValue) {
                         domElement[attrName] = attrValue;
+                        changed = true;
                     }
                 } else if (!oldAttrs || oldAttrs[attrName] !== attrValue) {
-                    updateAttribute(domElement, attrName, attrValue);
+                    if (attrName === 'class') {
+                        domElement.className = attrValue;
+                    } else {
+                        updateAttribute(domElement, attrName, attrValue);
+                    }
+                    changed = true;
+                }
+                if (changed && recordChanges) {
+                    (changes || (changes = [])).push(attrName);
                 }
             }
         }
@@ -595,9 +629,13 @@ var cito = window.cito || {};
                     } else if (!isInputProperty(tag, attrName)) {
                         domElement.removeAttribute(attrName);
                     }
+                    if (recordChanges) {
+                        (changes || (changes = [])).push(attrName);
+                    }
                 }
             }
         }
+        return changes;
     }
 
     function updateAttribute(domElement, name, value) {
@@ -625,7 +663,8 @@ var cito = window.cito || {};
     }
 
     function updateStyle(domElement, oldStyle, attrs, style) {
-        var propName;
+        var changed = false,
+            propName;
         if (!isString(style) && (!supportsCssSetProperty || !oldStyle || isString(oldStyle))) {
             var styleStr = '';
             if (style) {
@@ -641,6 +680,7 @@ var cito = window.cito || {};
         var domStyle = domElement.style;
         if (isString(style)) {
             domStyle.cssText = style;
+            changed = true;
         } else {
             if (style) {
                 for (propName in style) {
@@ -659,6 +699,7 @@ var cito = window.cito || {};
                             }
                             domStyle.setProperty(propName, propValue, '');
                         }
+                        changed = true;
                     }
                 }
             }
@@ -666,10 +707,12 @@ var cito = window.cito || {};
                 for (propName in oldStyle) {
                     if (!style || style[propName] === undefined) {
                         domStyle.removeProperty(propName);
+                        changed = true;
                     }
                 }
             }
         }
+        return changed;
     }
 
     function updateEvents(domElement, element, events, oldEvents) {
@@ -705,28 +748,32 @@ var cito = window.cito || {};
     }
 
     function addEventHandler(domElement, type) {
-        if (supportsEventListener) {
-            domElement.addEventListener(type, eventHandler, false);
-        } else {
-            var onType = 'on' + type;
-            if (onType in domElement) {
-                domElement[onType] = eventHandler;
+        if (type[0] !== '$') {
+            if (supportsEventListener) {
+                domElement.addEventListener(type, eventHandler, false);
             } else {
-                // TODO bind element to event handler + tests
-                domElement.attachEvent(onType, eventHandler);
+                var onType = 'on' + type;
+                if (onType in domElement) {
+                    domElement[onType] = eventHandler;
+                } else {
+                    // TODO bind element to event handler + tests
+                    domElement.attachEvent(onType, eventHandler);
+                }
             }
         }
     }
 
     function removeEventHandler(domElement, type) {
-        if (supportsEventListener) {
-            domElement.removeEventListener(type, eventHandler, false);
-        } else {
-            var onType = 'on' + type;
-            if (onType in domElement) {
-                domElement[onType] = null;
+        if (type[0] !== '$') {
+            if (supportsEventListener) {
+                domElement.removeEventListener(type, eventHandler, false);
             } else {
-                domElement.detachEvent(onType, eventHandler);
+                var onType = 'on' + type;
+                if (onType in domElement) {
+                    domElement[onType] = null;
+                } else {
+                    domElement.detachEvent(onType, eventHandler);
+                }
             }
         }
     }
@@ -1061,11 +1108,16 @@ var cito = window.cito || {};
                     if (children !== oldChildren) {
                         updateChildren(domNode, node, ns, oldChildren, children, false);
                     }
-                    var attrs = node.attrs, oldAttrs = oldNode.attrs;
+
+                    var attrs = node.attrs, oldAttrs = oldNode.attrs,
+                        events = node.events, oldEvents = oldNode.events;
                     if (attrs !== oldAttrs) {
-                        updateAttributes(domNode, tag, attrs, oldAttrs);
+                        var changedHandlers = events && events.$changed;
+                        var changes = updateAttributes(domNode, tag, attrs, oldAttrs, !!changedHandlers);
+                        if (changes) {
+                            triggerLight(changedHandlers, '$changed', domNode, node, 'changes', changes);
+                        }
                     }
-                    var events = node.events, oldEvents = oldNode.events;
                     if (events !== oldEvents) {
                         updateEvents(domNode, node, events, oldEvents);
                     }
@@ -1125,12 +1177,15 @@ var cito = window.cito || {};
                     for (var eventType in events) {
                         removeEventHandler(domNode, eventType);
                     }
+                    var destroyedHandlers = events.$destroyed;
+                    if (destroyedHandlers) {
+                        triggerLight(destroyedHandlers, '$destroyed', domNode, node);
+                    }
                 }
                 if (domNode.virtualNode) {
                     domNode.virtualNode = undefined;
                 }
             }
-            // TODO trigger destroy event
             var children = node.children;
             if (children) {
                 destroyNodes(children, getChildrenType(children));
