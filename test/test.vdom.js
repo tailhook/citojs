@@ -1886,6 +1886,36 @@ describe('cito.vdom', function () {
         });
     });
 
+    if (document.registerElement) {
+        var TestNormal = document.registerElement('test-normal', {
+            prototype: Object.create(HTMLElement.prototype, {})
+        });
+
+        var TestExtended = document.registerElement('test-extended', {
+            prototype: Object.create(HTMLButtonElement.prototype, {}),
+            extends: 'button'
+        });
+
+        describe('custom elements', function () {
+            it('normal element', function () {
+                var node = cito.vdom.create({tag: 'test-normal'});
+                expect(node.dom).to.be.a(TestNormal);
+            });
+
+            it('extended element', function () {
+                var node = cito.vdom.create({tag: 'button', attrs: {is: 'test-extended'}});
+                expect(node.dom).to.be.a(TestExtended);
+            });
+
+            it('changing is attribute creates new element', function () {
+                var node = cito.vdom.create({tag: 'button', attrs: {is: 'test-extended'}});
+                expect(node.dom).to.be.a(TestExtended);
+                cito.vdom.update(node, {tag: 'button'});
+                expect(node.dom).to.be.an(HTMLButtonElement);
+            });
+        });
+    }
+
     function forEachCombination(defs, callback) {
         _.forEach(defs, function (def1) {
             _.forEach(defs, function (def2) {

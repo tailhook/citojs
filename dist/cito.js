@@ -245,11 +245,15 @@ var cito = window.cito || {};
                     case 'math': ns = 'http://www.w3.org/1998/Math/MathML'; break;
                     default: ns = parentNs; break;
                 }
+
+                var attrs = node.attrs,
+                    is = attrs && attrs.is;
                 if (ns) {
                     node.ns = ns;
-                    domNode = document.createElementNS(ns, tag);
+                    // TODO does that even work?
+                    domNode = is ? document.createElementNS(ns, tag, is) : document.createElementNS(ns, tag);
                 } else {
-                    domNode = document.createElement(tag);
+                    domNode = is ? document.createElement(tag, is) : document.createElement(tag);
                 }
                 node.dom = domNode;
                 if (isTrident && domParent) {
@@ -262,7 +266,6 @@ var cito = window.cito || {};
                     createAllChildren(domNode, node, ns, children, false);
                 }
 
-                var attrs = node.attrs;
                 if (attrs) {
                     updateAttributes(domNode, tag, attrs);
                 }
@@ -596,7 +599,8 @@ var cito = window.cito || {};
         var changes, attrName;
         if (attrs) {
             for (attrName in attrs) {
-                var changed = false, attrValue = attrs[attrName];
+                var changed = false,
+                    attrValue = attrs[attrName];
                 if (attrName === 'style') {
                     var oldAttrValue = oldAttrs && oldAttrs[attrName];
                     if (oldAttrValue !== attrValue) {
@@ -662,7 +666,8 @@ var cito = window.cito || {};
     }
 
     function updateStyle(domElement, oldStyle, attrs, style) {
-        var changed = false, propName;
+        var changed = false,
+            propName;
         if (!isString(style) && (!supportsCssSetProperty || !oldStyle || isString(oldStyle))) {
             var styleStr = '';
             if (style) {
@@ -1100,6 +1105,12 @@ var cito = window.cito || {};
                     }
                     break;
                 default:
+                    var attrs = node.attrs, oldAttrs = oldNode.attrs;
+                    if ((attrs && attrs.is) !== (oldAttrs && oldAttrs.is)) {
+                        createNode(node, domParent, parentNs, oldNode, true);
+                        return;
+                    }
+
                     var ns = oldNode.ns;
                     if (ns) node.ns = ns;
                     node.dom = domNode;
@@ -1107,8 +1118,7 @@ var cito = window.cito || {};
                         updateChildren(domNode, node, ns, oldChildren, children, false);
                     }
 
-                    var attrs = node.attrs, oldAttrs = oldNode.attrs,
-                        events = node.events, oldEvents = oldNode.events;
+                    var events = node.events, oldEvents = oldNode.events;
                     if (attrs !== oldAttrs) {
                         var changedHandlers = events && events.$changed;
                         var changes = updateAttributes(domNode, tag, attrs, oldAttrs, !!changedHandlers);
