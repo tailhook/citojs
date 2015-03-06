@@ -996,6 +996,7 @@ describe('cito.vdom', function () {
         ]
     };
 
+    /*
     function immediatePromise(valueCallback) {
         return {then: function (thenCallback) {
             thenCallback(valueCallback());
@@ -1144,6 +1145,7 @@ describe('cito.vdom', function () {
             htmlDelayed: '<div><ul><li>t0</li></ul></div>'
         }
     ];
+    */
 
     var ulTwoLi = {
         tag: 'ul',
@@ -1631,7 +1633,7 @@ describe('cito.vdom', function () {
 
             it('properties', function () {
                 expect(node.dom.virtualNode).to.be(node);
-                expect(node.dom.firstChild.virtualNode).to.be(node.children[0]);
+                expect(node.dom.firstChild.virtualNode).to.be(node.children);
 
                 var domParent = node.dom, domChild = domParent.firstChild;
                 cito.vdom.remove(node);
@@ -1785,7 +1787,7 @@ describe('cito.vdom', function () {
                     currentTargets.push(event.currentTarget);
                 };
                 dispatchEvent(node.dom.firstChild, createEvent('click'));
-                var domChild = node.children[0].dom,
+                var domChild = node.children.dom,
                     expectedCurrentTargets = [domChild, domChild, node.dom];
                 expect(thises).to.eql(expectedCurrentTargets);
                 expect(currentTargets).to.eql(expectedCurrentTargets);

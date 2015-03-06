@@ -65,10 +65,10 @@ module.exports = function(config) {
     // start these browsers
     // available browser launchers: https://npmjs.org/browse/keyword/karma-launcher
 
-    browsers: ['Chrome', 'Firefox', 'Safari', 'IE6 - WinXP', 'IE7 - WinXP', 'IE8 - WinXP', 'IE9 - Win7', 'IE10 - Win7', 'IE11 - Win7'],
+    //browsers: ['Chrome', 'Firefox', 'Safari', 'IE6 - WinXP', 'IE7 - WinXP', 'IE8 - WinXP', 'IE9 - Win7', 'IE10 - Win7', 'IE11 - Win7'],
     //browsers: ['Chrome', 'Firefox', 'IE6 - WinXP', 'IE11 - Win7'],
-    //browsers: ['Chrome'],
-
+    browsers: ['Chrome'],
+      
     transports: ['jsonp-polling'], // IE6
     //hostname: require("os").hostname(), // WebDriver
 

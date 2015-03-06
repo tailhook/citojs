@@ -364,6 +364,8 @@ If you only want to add/remove a node conditionally without having overhead you 
 
 #### Promises
 
+*The promise support is disabled at the moment and will soon be moved to a utility.*
+
 Since promises are becoming more and more popular in browsers, cito.js has built-in support for them:
 
 ```javascript
