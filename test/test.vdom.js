@@ -1893,7 +1893,7 @@ describe('cito.vdom', function () {
 
         var TestExtended = document.registerElement('test-extended', {
             prototype: Object.create(HTMLButtonElement.prototype, {}),
-            extends: 'button'
+            'extends': 'button'
         });
 
         describe('custom elements', function () {
