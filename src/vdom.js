@@ -474,7 +474,7 @@ var cito = window.cito || {};
                         if (!isString(child)) {
                             initVirtualDOM(domNode.firstChild, child);
                         } else if (!child) {
-                            domNode.firstChild.data = '';
+                            domNode.firstChild.nodeValue = '';
                         }
                     }
 
@@ -884,10 +884,17 @@ var cito = window.cito || {};
         } else if (childrenType < 2) {
             child = getOnlyChild(children, childrenType);
             if (!inFragment && isString(child)) {
-                if (childrenType !== oldChildrenType || child !== getOnlyChild(oldChildren, oldChildrenType)) {
-                    destroyNodes(oldChildren, oldChildrenType);
-                    setTextContent(domElement, child, true);
+                if (childrenType === oldChildrenType) {
+                    oldChild = getOnlyChild(oldChildren, oldChildrenType);
+                    if (child === oldChild) {
+                        return;
+                    } else if (isString(oldChild)) {
+                        domElement.firstChild.nodeValue = child;
+                        return;
+                    }
                 }
+                destroyNodes(oldChildren, oldChildrenType);
+                setTextContent(domElement, child, true);
                 return;
             } else if (oldChildrenType < 2) {
                 oldChild = normOnlyOld(oldChildren, oldChildrenType, domElement);
