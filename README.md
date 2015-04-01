@@ -387,9 +387,9 @@ Promises can also be used for single nodes:
 ]}
 ```
 
-#### SVG and MathML
+#### Custom Elements, SVG and MathML
 
-SVG and MathML are supported out of the box and you don't have to do anything special to use them.
+Custom Elements, SVG and MathML are supported out of the box and you don't have to do anything special to use them.
 
 ## How to Contribute
 
