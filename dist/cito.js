@@ -19,7 +19,7 @@ var cito = window.cito || {};
 
     var userAgent = navigator.userAgent,
         isWebKit = userAgent.indexOf('WebKit') !== -1,
-        isFirefox = userAgent.indexOf('Chrome') !== -1,
+        isFirefox = userAgent.indexOf('Firefox') !== -1,
         isTrident = userAgent.indexOf('Trident') !== -1;
 
     var helperDiv = document.createElement('div'),
