@@ -223,6 +223,18 @@ describe('cito.vdom', function () {
                 html: '<div>t1t0</div>'
             }
         ],
+        'escaping': [
+            {
+                name: 'attr',
+                node: {tag: 'div', attrs: {title: '\"&'}},
+                html: '<div title="&quot;&amp;"></div>'
+            },
+            {
+                name: 'content',
+                node: {tag: 'div', children: '<&>'},
+                html: '<div>&lt;&amp;&gt;</div>'
+            }
+        ],
         'comments': [
             {
                 name: 'comment 1',
@@ -2060,9 +2072,18 @@ describe('cito.vdom', function () {
         html = html.replace(/(<([\w-]+)[^/>]*)\/>/g, '$1></$2>');
         html = html.replace(/(<[\w-]+)(.*?)(>)/g, function (match, start, attrsStr, end) {
             var attrs = [];
-            var attrMatch, attrRegEx = /[\w-]+(=(".*?")|[^ ]*)?/g;
+            var attrMatch, attrRegEx = /([\w-]+)(?:=(?:(["'])(.*?)\2)|=([^ ]*))?/g;
             while (attrMatch = attrRegEx.exec(attrsStr)) {
-                attrs.push(attrMatch[0]);
+                var normedAttr;
+                if (attrMatch === '"') {
+                    normedAttr = attrMatch[0]
+                } else if (attrMatch[3]) {
+                    var attrValue = (attrMatch[3] || attrMatch[2]).replace('"', "&quot;");
+                    normedAttr = attrMatch[1] + '="' + attrValue + '"';
+                } else {
+                    normedAttr = attrMatch[0];
+                }
+                attrs.push(normedAttr);
             }
             return start + attrs.sort().join(' ') + end;
         });
