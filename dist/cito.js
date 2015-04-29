@@ -536,9 +536,9 @@ var cito = window.cito || {};
             helperDiv.innerText = value;
             value = helperDiv.innerHTML;
         } else if (isFirefox) {
-            value = value.split('<').join('&lt;').split('>').join('&gt;').split('&').join('&amp;');
+            value = value.split('&').join('&amp;').split('<').join('&lt;').split('>').join('&gt;');
         } else {
-            value = value.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/&/g, '&amp;');
+            value = value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
         }
         return value;
     }
@@ -553,9 +553,9 @@ var cito = window.cito || {};
         value = '' + value;
         if (type !== 'number') {
             if (isFirefox) {
-                value = value.split('"').join('&quot;').split('&').join('&amp;');
+                value = value.split('&').join('&amp;').split('"').join('&quot;');
             } else {
-                value = value.replace(/"/g, '&quot;').replace(/&/g, '&amp;');
+                value = value.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
             }
         }
         // TODO validate attribute name
