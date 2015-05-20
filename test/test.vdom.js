@@ -1609,6 +1609,35 @@ describe('cito.vdom', function () {
                 });
             });
         });
+
+        it('maintains focus', function () {
+            var node;
+            after(function () {
+                cito.vdom.remove(node);
+            });
+
+            node = cito.vdom.append(document.body, {
+                tag: 'div',
+                children: [
+                    {tag: 'input', key: 0},
+                    {tag: 'span', key: 1}
+                ]
+            });
+
+            var input = node.dom.firstChild;
+            input.focus();
+            expect(input).to.be(document.activeElement);
+
+            cito.vdom.update(node, {
+                tag: 'div',
+                children: [
+                    {tag: 'span', key: 1},
+                    {tag: 'input', key: 0}
+                ]
+            });
+
+            expect(input).to.be(document.activeElement);
+        });
     });
 
     describe('#append()', function () {

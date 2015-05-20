@@ -1229,6 +1229,12 @@ var cito = window.cito || {};
         }
     }
 
+    function maintainFocus(previousActiveElement) {
+        if (previousActiveElement && previousActiveElement != document.body && previousActiveElement != document.activeElement) {
+            previousActiveElement.focus();
+        }
+    }
+
     var vdom = cito.vdom = {
         create: function (node) {
             node = norm(node);
@@ -1241,16 +1247,20 @@ var cito = window.cito || {};
             return node;
         },
         update: function (oldNode, node) {
+            var activeElement = document.activeElement;
             node = norm(node, oldNode);
             updateNode(oldNode, node, oldNode.dom.parentNode);
             copyObjectProps(node, oldNode);
+            maintainFocus(activeElement);
             return oldNode;
         },
         updateChildren: function (element, children) {
+            var activeElement = document.activeElement;
             var oldChildren = element.children;
             if (oldChildren !== children) {
                 updateChildren(element.dom, element, element.ns, oldChildren, children, !element.tag);
             }
+            maintainFocus(activeElement);
         },
         remove: function (node) {
             var domParent = node.dom.parentNode;
