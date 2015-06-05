@@ -130,7 +130,7 @@ The element node is the most basic node type. Examples:
 
 ```javascript
 // Empty element with attributes
-{tag: 'img', {src: 'http://...', alt: 'Image ...'}}
+{tag: 'img', attrs: {src: 'http://...', alt: 'Image ...'}}
 
 // Element with one child
 {tag: 'ul', children: [{tag: 'li', ...}]}
