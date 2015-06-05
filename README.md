@@ -267,10 +267,10 @@ Although you could avoid fragments, they often make your program simpler and imp
 If this node is updated and the last item of the first list has been removed, it will have to re-render all the elements of the second list. Instead of using [keyed nodes](#keyed-nodes) to solve this problem, we can now simply use fragments:
 
 ```javascript
-{tag: 'ul', children: {
+{tag: 'ul', children: [
     {children: list1},
     {children: list2}
-}}
+]}
 ```
 
 Now, if the last element is removed from the first list, this will not affect the re-rendering of the second list at all because it will compare the two versions of the first and second list separately.
