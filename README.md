@@ -168,7 +168,7 @@ To style an element, you can either use a CSS string or an object with CSS prope
 {tag: 'input', attrs: {style: 'border-bottom: 1px solid black; color: gray;'}}
 
 // Element with style object
-{tag: 'input', attrs: {style: 'border-bottom': '1px solid black', color: 'gray'}}
+{tag: 'input', attrs: {style: {'border-bottom': '1px solid black', color: 'gray'}}}
 ```
 
 ###### Input Elements
