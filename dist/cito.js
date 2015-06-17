@@ -266,7 +266,7 @@ var cito = window.cito || {};
                 }
 
                 if (attrs) {
-                    updateAttributes(domNode, tag, attrs);
+                    updateAttributes(domNode, tag, ns, attrs);
                 }
                 var events = node.events;
                 if (events) {
@@ -594,7 +594,7 @@ var cito = window.cito || {};
         node.domLength = domLength;
     }
 
-    function updateAttributes(domElement, tag, attrs, oldAttrs, recordChanges) {
+    function updateAttributes(domElement, tag, ns, attrs, oldAttrs, recordChanges) {
         var changes, attrName;
         if (attrs) {
             for (attrName in attrs) {
@@ -611,7 +611,7 @@ var cito = window.cito || {};
                         changed = true;
                     }
                 } else if (!oldAttrs || oldAttrs[attrName] !== attrValue) {
-                    if (attrName === 'class') {
+                    if (attrName === 'class' && !ns) {
                         domElement.className = attrValue;
                     } else {
                         updateAttribute(domElement, attrName, attrValue);
@@ -626,7 +626,7 @@ var cito = window.cito || {};
         if (oldAttrs) {
             for (attrName in oldAttrs) {
                 if ((!attrs || attrs[attrName] === undefined)) {
-                    if (attrName === 'class') {
+                    if (attrName === 'class' && !ns) {
                         domElement.className = '';
                     } else if (!isInputProperty(tag, attrName)) {
                         domElement.removeAttribute(attrName);
@@ -1127,7 +1127,7 @@ var cito = window.cito || {};
                     var events = node.events, oldEvents = oldNode.events;
                     if (attrs !== oldAttrs) {
                         var changedHandlers = events && events.$changed;
-                        var changes = updateAttributes(domNode, tag, attrs, oldAttrs, !!changedHandlers);
+                        var changes = updateAttributes(domNode, tag, ns, attrs, oldAttrs, !!changedHandlers);
                         if (changes) {
                             triggerLight(changedHandlers, '$changed', domNode, node, 'changes', changes);
                         }
