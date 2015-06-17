@@ -1344,7 +1344,18 @@ describe('cito.vdom', function () {
                 },
                 html: '<svg><circle></circle><circle></circle></svg>',
                 namespaces: svgNamespaces
-            }
+            },
+            {
+                name: 'class',
+                node: {
+                    tag: 'svg',
+                    attrs: {'class': 'class1'},
+                    children: {tag: 'circle', attrs: {'class': 'class2'}}
+                },
+                html: '<svg class="class1"><circle class="class2"></circle></svg>',
+                namespaces: svgNamespaces
+            },
+
         ];
     }
     if (supportsNamespace('math')) {
