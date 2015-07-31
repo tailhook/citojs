@@ -1004,7 +1004,8 @@ var cito = window.cito || {};
                     oldChildrenMap[key] = null;
                     oldNextChild = oldChild.next;
                     updateNode(oldChild, child, domElement, ns, null, 0, nextChild);
-                    if ((oldNextChild && oldNextChild.key) !== (nextChild && nextChild.key)) {
+                    // TODO find solution without checking the dom
+                    if (domElement.nextSibling != (nextChild && nextChild.dom)) {
                         moveChild(domElement, child, nextChild);
                     }
                 } else {
