@@ -66,7 +66,7 @@ function doubleList() {
 function root() {
     return {
         tag: 'div', children: [
-            {tag: 'button', children: 'double', events: {click: doubleList},
+            {tag: 'button', children: 'double', events: {click: doubleList}},
             {tag: 'ul', children: items}
         ]
     };
